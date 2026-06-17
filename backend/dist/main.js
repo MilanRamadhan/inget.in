@@ -62,7 +62,12 @@ module.exports = async (req, res) => {
     catch (err) {
         appReady = null;
         console.error("[Bootstrap Error]", err);
-        res.status(500).json({ statusCode: 500, message: "Server initialization failed" });
+        res.status(500).json({
+            statusCode: 500,
+            message: "Server initialization failed",
+            error: String(err?.message || err),
+            hasDbUrl: !!process.env.DATABASE_URL,
+        });
         return;
     }
     expressServer(req, res);
