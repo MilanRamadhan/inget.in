@@ -10,8 +10,10 @@ async function bootstrap() {
   app.use(helmet());
 
   app.enableCors({
-    origin: ["http://localhost:3000", "https://inget-in.vercel.app"],
+    origin: ["http://localhost:3000", "https://inget-in.vercel.app", "https://inget-in-pks2.vercel.app"],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   });
 
   app.useGlobalPipes(
