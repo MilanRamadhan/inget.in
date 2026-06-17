@@ -2,6 +2,8 @@ node_modules/
 .env
 .env.local
 dist/
+!backend/dist/
+!backend/dist/**
 .next/
 *.log
 .DS_Store
