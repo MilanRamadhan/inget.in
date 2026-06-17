@@ -1,17 +1,23 @@
 import { NestFactory } from "@nestjs/core";
+import { ExpressAdapter } from "@nestjs/platform-express";
 import { ValidationPipe } from "@nestjs/common";
 import helmet from "helmet";
+import * as express from "express";
 import { AppModule } from "./app.module";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+const expressServer = express();
 
-  const allowed = ["http://localhost:3000", "https://inget-in.vercel.app"];
+const ALLOWED_ORIGINS = ["http://localhost:3000", "https://inget-in.vercel.app"];
+
+let appReady: Promise<void> | null = null;
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressServer));
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowed.includes(origin)) callback(null, true);
+      if (!origin || ALLOWED_ORIGINS.includes(origin)) callback(null, true);
       else callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
@@ -33,8 +39,22 @@ async function bootstrap() {
 
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  const port = process.env.PORT || 3001;
-  await app.listen(port);
-  console.log(`Backend running on http://localhost:${port}`);
+  await app.init();
 }
-bootstrap();
+
+// Local dev: start TCP server
+if (require.main === module) {
+  bootstrap().then(() => {
+    const port = process.env.PORT || 3001;
+    expressServer.listen(port, () => {
+      console.log(`Backend running on http://localhost:${port}`);
+    });
+  });
+}
+
+// Vercel serverless: export request handler
+module.exports = async (req: express.Request, res: express.Response) => {
+  if (!appReady) appReady = bootstrap();
+  await appReady;
+  expressServer(req, res);
+};
