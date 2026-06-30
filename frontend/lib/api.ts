@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+// API now lives in this same Next.js app under /api (same-origin, no CORS).
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export const api = axios.create({
   baseURL: BASE_URL,
