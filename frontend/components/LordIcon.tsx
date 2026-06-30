@@ -1,54 +1,81 @@
 'use client'
-import { useEffect, useState } from 'react'
+import {
+  Pencil,
+  Trash2,
+  Check,
+  Plus,
+  Save,
+  Search,
+  LogOut,
+  User,
+  Home,
+  Settings,
+  Bell,
+  NotebookPen,
+  Folder,
+  Calendar,
+  Clock,
+  Tag,
+  Zap,
+  Lock,
+  Star,
+  type LucideIcon,
+} from 'lucide-react'
+
+// Map of icon keys (from lib/icons.ts) to local lucide-react components.
+const REGISTRY: Record<string, LucideIcon> = {
+  edit: Pencil,
+  delete: Trash2,
+  check: Check,
+  add: Plus,
+  save: Save,
+  search: Search,
+  logout: LogOut,
+  user: User,
+  home: Home,
+  settings: Settings,
+  bell: Bell,
+  note: NotebookPen,
+  folder: Folder,
+  calendar: Calendar,
+  clock: Clock,
+  tag: Tag,
+  lightning: Zap,
+  lock: Lock,
+  star: Star,
+}
+
+// Pull the "primary" hex out of "primary:#F97316,secondary:#EA6C0A".
+function primaryColor(colors?: string): string {
+  if (!colors) return 'currentColor'
+  const m = colors.match(/primary:(#[0-9a-fA-F]{3,8})/)
+  return m ? m[1] : 'currentColor'
+}
 
 interface LordIconProps {
-  src: string
-  trigger?: 'hover' | 'click' | 'loop' | 'loop-on-hover' | 'boomerang' | 'morph' | 'sequence' | 'in'
+  src?: string // icon key, e.g. ICONS.edit
+  trigger?: string // accepted for API compatibility (unused now)
   colors?: string
-  stroke?: 'light' | 'regular' | 'bold'
+  stroke?: string
   state?: string
-  /** CSS selector of the element that receives trigger events (e.g. ".note-card") */
   target?: string
   size?: number
   className?: string
   style?: React.CSSProperties
 }
 
-/**
- * Renders a Lordicon animated icon.
- * Only renders client-side to avoid SSR mismatch with custom element.
- */
-export function LordIcon({
-  src,
-  trigger = 'hover',
-  colors,
-  stroke,
-  state,
-  target,
-  size = 28,
-  className,
-  style,
-}: LordIconProps) {
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    setReady(true)
-  }, [])
-
-  if (!ready) {
-    return <span style={{ display: 'inline-block', width: size, height: size }} />
-  }
-
+// Drop-in replacement for the old Lordicon web-component wrapper. Renders a
+// local lucide icon with a subtle hover animation — no network, never 404s.
+export function LordIcon({ src, colors, size = 28, className, style }: LordIconProps) {
+  const Icon = (src && REGISTRY[src]) || Pencil
   return (
-    <lord-icon
-      src={src}
-      trigger={trigger}
-      colors={colors}
-      stroke={stroke}
-      state={state}
-      target={target}
-      style={{ width: size, height: size, display: 'inline-block', ...style }}
-      className={className}
+    <Icon
+      size={size}
+      color={primaryColor(colors)}
+      strokeWidth={2}
+      className={`app-icon ${className ?? ''}`}
+      style={style}
+      aria-hidden
     />
   )
 }

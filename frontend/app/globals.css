@@ -41,3 +41,17 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* App icons (lucide) — subtle life on hover, including when the whole
+   sticky-note card or a button is hovered. */
+.app-icon {
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+button:hover .app-icon,
+a:hover .app-icon,
+.note-card:hover .app-icon {
+  transform: scale(1.15) rotate(-3deg);
+}
+button:active .app-icon {
+  transform: scale(0.92);
+}
