@@ -10,15 +10,20 @@ interface NoteCardProps {
   onToggleDone: (id: string) => void
   onEdit: (note: Note) => void
   onDelete: (id: string) => void
+  onToggleItem?: (noteId: string, itemId: string) => void
 }
 
-export function NoteCard({ note, onToggleDone, onEdit, onDelete }: NoteCardProps) {
+export function NoteCard({ note, onToggleDone, onEdit, onDelete, onToggleItem }: NoteCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const color = note.category?.color || '#9CA3AF'
   const bg = getCategoryPastel(color)
   const time = formatTime(note.scheduledAt)
   const dateStr = note.scheduledAt ? formatShortDate(note.scheduledAt) : null
+
+  const isTodo = note.type === 'todo' && Array.isArray(note.items)
+  const items = isTodo ? note.items || [] : []
+  const doneCount = items.filter((it) => it.done).length
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -92,11 +97,50 @@ export function NoteCard({ note, onToggleDone, onEdit, onDelete }: NoteCardProps
         </div>
       </div>
 
-      {/* Description */}
-      {note.note && (
-        <p className="text-xs leading-relaxed text-text-secondary line-clamp-2 flex-1 mb-2">
-          {note.note}
-        </p>
+      {/* To-do checklist OR description */}
+      {isTodo ? (
+        <div className="flex-1 mb-2 mt-1 space-y-1">
+          {items.slice(0, 4).map((it) => (
+            <button
+              key={it.id}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleItem?.(note.id, it.id)
+              }}
+              className="flex items-center gap-2 w-full text-left"
+            >
+              <span
+                className="w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors"
+                style={{
+                  backgroundColor: it.done ? color : 'rgba(255,255,255,0.6)',
+                  borderColor: it.done ? color : 'rgba(107,114,128,0.4)',
+                }}
+              >
+                {it.done && <LordIcon src={ICONS.check} colors="primary:#ffffff,secondary:#ffffff" size={11} />}
+              </span>
+              <span
+                className={`text-xs leading-snug truncate ${
+                  it.done ? 'line-through text-text-secondary' : 'text-text-primary'
+                }`}
+              >
+                {it.text}
+              </span>
+            </button>
+          ))}
+          {items.length > 4 && (
+            <p className="text-[11px] text-text-secondary pl-6">+{items.length - 4} item lagi</p>
+          )}
+          {items.length === 0 && (
+            <p className="text-xs text-text-secondary italic">Belum ada item</p>
+          )}
+        </div>
+      ) : (
+        note.note && (
+          <p className="text-xs leading-relaxed text-text-secondary line-clamp-2 flex-1 mb-2">
+            {note.note}
+          </p>
+        )
       )}
 
       {/* Bottom: title + date/time + category */}
@@ -108,6 +152,15 @@ export function NoteCard({ note, onToggleDone, onEdit, onDelete }: NoteCardProps
         >
           {note.title}
         </h3>
+
+        {isTodo && (
+          <div className="flex items-center gap-1 mt-1">
+            <span className="material-icons text-[11px] leading-none text-text-secondary">checklist</span>
+            <span className="text-[11px] text-text-secondary">
+              {doneCount}/{items.length} selesai
+            </span>
+          </div>
+        )}
 
         {(dateStr || time) && (
           <div className="flex items-center gap-1 mt-1">

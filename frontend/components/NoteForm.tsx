@@ -1,6 +1,6 @@
 'use client'
 import { useState, FormEvent } from 'react'
-import { Category } from '../types'
+import { Category, NoteType, TodoItem } from '../types'
 import { Button } from './ui/Button'
 import { CategoryChip } from './ui/CategoryChip'
 import { getCategoryColor } from '../lib/utils'
@@ -9,17 +9,22 @@ import { ICONS, COLOR_PRIMARY, COLOR_WHITE } from '../lib/icons'
 
 interface NoteFormProps {
   categories?: Category[]
+  noteType?: NoteType
   initialData?: {
     title?: string
     note?: string
     scheduledAt?: string
     categoryId?: string
+    type?: NoteType
+    items?: TodoItem[]
   }
   onSubmit: (data: {
     title: string
     note: string
     scheduledAt: string
     categoryId: string
+    type?: NoteType
+    items?: TodoItem[]
   }) => Promise<void>
   onSaveClick?: () => void
   onCreateCategory?: (name: string, color: string) => Promise<Category | null>
@@ -40,6 +45,7 @@ const PRESET_COLORS = [
 
 export function NoteForm({
   categories = [],
+  noteType,
   initialData,
   onSubmit,
   onSaveClick,
@@ -64,6 +70,30 @@ export function NoteForm({
   const [newCatLoading, setNewCatLoading] = useState(false)
   // Local-only categories (created by guest or before DB save)
   const [localCats, setLocalCats] = useState<{ id: string; name: string; color: string }[]>([])
+
+  // To-do checklist state
+  const mode: NoteType = initialData?.type || noteType || 'text'
+  const newItem = (): TodoItem => ({ id: crypto.randomUUID(), text: '', done: false })
+  const [items, setItems] = useState<TodoItem[]>(
+    initialData?.items && initialData.items.length ? initialData.items : [newItem()],
+  )
+  const [autoFocusId, setAutoFocusId] = useState<string | null>(null)
+
+  const addItemAfter = (index: number) => {
+    const it = newItem()
+    setItems((prev) => {
+      const next = [...prev]
+      next.splice(index + 1, 0, it)
+      return next
+    })
+    setAutoFocusId(it.id)
+  }
+  const updateItemText = (id: string, text: string) =>
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, text } : it)))
+  const toggleItem = (id: string) =>
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it)))
+  const removeItem = (id: string) =>
+    setItems((prev) => (prev.length > 1 ? prev.filter((it) => it.id !== id) : prev))
 
   const allCategories = [
     ...PRESET_CATEGORIES,
@@ -105,14 +135,20 @@ export function NoteForm({
       scheduledAt = `${date}T00:00:00.000Z`
     }
 
+    const cleanItems = items.map((it) => ({ ...it, text: it.text.trim() })).filter((it) => it.text)
+    const typePayload =
+      mode === 'todo'
+        ? { type: 'todo' as NoteType, items: cleanItems }
+        : { type: 'text' as NoteType }
+
     if (isGuest && onSaveClick) {
-      await onSubmit({ title, note, scheduledAt, categoryId: selectedCategory })
+      await onSubmit({ title, note, scheduledAt, categoryId: selectedCategory, ...typePayload })
       onSaveClick()
       return
     }
 
     const categoryId = await resolveCategoryId()
-    await onSubmit({ title, note, scheduledAt, categoryId })
+    await onSubmit({ title, note, scheduledAt, categoryId, ...typePayload })
   }
 
   const handleAddCategory = async () => {
@@ -147,26 +183,88 @@ export function NoteForm({
       {/* Title */}
       <div>
         <label className="flex items-center gap-1.5 text-sm font-medium text-text-primary mb-1.5">
-          <span className="material-icons text-base leading-none text-primary">edit_note</span>
-          Tulis catatanmu
+          <span className="material-icons text-base leading-none text-primary">
+            {mode === 'todo' ? 'checklist' : 'edit_note'}
+          </span>
+          {mode === 'todo' ? 'Buat to-do list' : 'Tulis catatanmu'}
         </label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Judul catatan..."
+          placeholder={mode === 'todo' ? 'Judul to-do list...' : 'Judul catatan...'}
           className="w-full rounded-input border border-border bg-white px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-semibold"
           required
         />
       </div>
 
-      {/* Description */}
-      <textarea
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Tambah deskripsi (opsional)..."
-        rows={3}
-        className="w-full rounded-input border border-border bg-white px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"
-      />
+      {/* Checklist (todo) or description (text) */}
+      {mode === 'todo' ? (
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-text-secondary mb-2">
+            <span className="material-icons text-sm leading-none">checklist</span>
+            Daftar tugas
+          </label>
+          <div className="space-y-1.5">
+            {items.map((it, i) => (
+              <div key={it.id} className="flex items-center gap-2 group">
+                <button
+                  type="button"
+                  onClick={() => toggleItem(it.id)}
+                  className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${
+                    it.done ? 'bg-primary border-primary text-white' : 'border-border bg-white hover:border-primary'
+                  }`}
+                  aria-label={it.done ? 'Tandai belum selesai' : 'Tandai selesai'}
+                >
+                  {it.done && <LordIcon src={ICONS.check} colors={COLOR_WHITE} size={14} />}
+                </button>
+                <input
+                  autoFocus={it.id === autoFocusId}
+                  value={it.text}
+                  onChange={(e) => updateItemText(it.id, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addItemAfter(i)
+                    }
+                    if (e.key === 'Backspace' && it.text === '' && items.length > 1) {
+                      e.preventDefault()
+                      removeItem(it.id)
+                    }
+                  }}
+                  placeholder="Item tugas..."
+                  className={`flex-1 bg-transparent border-0 border-b border-transparent focus:border-border px-1 py-1 text-sm text-text-primary placeholder:text-text-secondary focus:outline-none transition-colors ${
+                    it.done ? 'line-through text-text-secondary' : ''
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeItem(it.id)}
+                  className="text-text-secondary hover:text-danger transition-colors p-1 opacity-0 group-hover:opacity-100"
+                  aria-label="Hapus item"
+                >
+                  <span className="material-icons text-base leading-none">close</span>
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => addItemAfter(items.length - 1)}
+            className="mt-2 inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:text-[#EA6C0A] transition-colors"
+          >
+            <LordIcon src={ICONS.add} colors={COLOR_PRIMARY} size={18} />
+            Tambah item
+          </button>
+        </div>
+      ) : (
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Tambah deskripsi (opsional)..."
+          rows={3}
+          className="w-full rounded-input border border-border bg-white px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"
+        />
+      )}
 
       {/* Date & Time */}
       <div className="flex gap-3">

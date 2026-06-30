@@ -70,7 +70,7 @@ async function safeCategoryId(userId: string, categoryId?: string | null): Promi
 
 const noteCols = (sql: postgres.Sql) => sql`
   n.id, n."userId", n."categoryId", n.title, n.note,
-  n."scheduledAt", n."isDone", n."createdAt", n."updatedAt",
+  n."scheduledAt", n."isDone", n."type", n."items", n."createdAt", n."updatedAt",
   CASE WHEN c.id IS NOT NULL THEN to_jsonb(c.*) ELSE NULL END AS category`
 
 export async function getNote(id: string): Promise<any | null> {
@@ -106,15 +106,25 @@ export async function listNotes(
 
 export async function createNote(
   userId: string,
-  d: { title: string; note?: string; scheduledAt?: string; categoryId?: string; isDone?: boolean },
+  d: {
+    title: string
+    note?: string
+    scheduledAt?: string
+    categoryId?: string
+    isDone?: boolean
+    type?: string
+    items?: any[]
+  },
 ): Promise<any> {
   const sql = getSql()
   const id = crypto.randomUUID()
   const now = new Date().toISOString()
   const categoryId = await safeCategoryId(userId, d.categoryId)
+  const type = d.type === 'todo' ? 'todo' : 'text'
+  const items = type === 'todo' && Array.isArray(d.items) ? d.items : null
   await sql`
-    INSERT INTO ingetin."Note" (id, "userId", title, note, "scheduledAt", "categoryId", "isDone", "createdAt", "updatedAt")
-    VALUES (${id}, ${userId}, ${d.title}, ${d.note ?? null}, ${d.scheduledAt || null}, ${categoryId}, ${d.isDone ?? false}, ${now}, ${now})`
+    INSERT INTO ingetin."Note" (id, "userId", title, note, "scheduledAt", "categoryId", "isDone", "type", "items", "createdAt", "updatedAt")
+    VALUES (${id}, ${userId}, ${d.title}, ${d.note ?? null}, ${d.scheduledAt || null}, ${categoryId}, ${d.isDone ?? false}, ${type}, ${items ? sql.json(items) : null}, ${now}, ${now})`
   return getNote(id)
 }
 
@@ -129,7 +139,10 @@ export async function updateNote(id: string, current: any, body: any): Promise<a
         ? await safeCategoryId(current.userId, body.categoryId)
         : current.categoryId,
     isDone: 'isDone' in body ? body.isDone : current.isDone,
+    type: 'type' in body ? (body.type === 'todo' ? 'todo' : 'text') : current.type,
+    items: 'items' in body ? body.items : current.items,
   }
+  const items = Array.isArray(merged.items) ? merged.items : null
   await sql`
     UPDATE ingetin."Note" SET
       title = ${merged.title},
@@ -137,6 +150,8 @@ export async function updateNote(id: string, current: any, body: any): Promise<a
       "scheduledAt" = ${merged.scheduledAt},
       "categoryId" = ${merged.categoryId},
       "isDone" = ${merged.isDone},
+      "type" = ${merged.type},
+      "items" = ${items ? sql.json(items) : null},
       "updatedAt" = ${new Date().toISOString()}
     WHERE id = ${id}`
   return getNote(id)

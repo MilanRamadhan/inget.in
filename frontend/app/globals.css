@@ -55,3 +55,18 @@ a:hover .app-icon,
 button:active .app-icon {
   transform: scale(0.92);
 }
+
+/* Speed-dial option buttons fan out with a little pop. */
+@keyframes dial-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.dial-item {
+  animation: dial-pop 0.16s ease-out backwards;
+}

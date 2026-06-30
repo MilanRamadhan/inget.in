@@ -14,6 +14,14 @@ export interface Category {
   updatedAt: string
 }
 
+export interface TodoItem {
+  id: string
+  text: string
+  done: boolean
+}
+
+export type NoteType = 'text' | 'todo'
+
 export interface Note {
   id: string
   userId: string
@@ -23,6 +31,8 @@ export interface Note {
   note?: string
   scheduledAt?: string
   isDone: boolean
+  type?: NoteType
+  items?: TodoItem[] | null
   createdAt: string
   updatedAt: string
 }

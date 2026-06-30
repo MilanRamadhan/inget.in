@@ -28,10 +28,10 @@ export async function POST(req: NextRequest) {
   if (!auth) return fail('Unauthorized', 401)
 
   try {
-    const { title, note, scheduledAt, categoryId, isDone } = await req.json()
+    const { title, note, scheduledAt, categoryId, isDone, type, items } = await req.json()
     if (!title) return fail('Title is required')
 
-    const created = await createNote(auth.id, { title, note, scheduledAt, categoryId, isDone })
+    const created = await createNote(auth.id, { title, note, scheduledAt, categoryId, isDone, type, items })
     return ok(created, 201)
   } catch (e: any) {
     return fail(e?.message || 'Internal server error', 500)

@@ -19,6 +19,7 @@ export const ICONS = {
 
   // Content
   note: 'note',
+  list: 'list',
   folder: 'folder',
   calendar: 'calendar',
   clock: 'clock',

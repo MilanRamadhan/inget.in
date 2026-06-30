@@ -25,8 +25,16 @@ export default function DashboardPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [showNewNote, setShowNewNote] = useState(false)
+  const [newNoteType, setNewNoteType] = useState<'text' | 'todo'>('text')
+  const [dialOpen, setDialOpen] = useState(false)
   const [editingNote, setEditingNote] = useState<Note | null>(null)
   const [noteFormLoading, setNoteFormLoading] = useState(false)
+
+  const openNewNote = (type: 'text' | 'todo') => {
+    setNewNoteType(type)
+    setShowNewNote(true)
+    setDialOpen(false)
+  }
 
   const todayFull = new Date().toLocaleDateString('id-ID', {
     weekday: 'long',
@@ -82,6 +90,14 @@ export default function DashboardPage() {
     } finally {
       setNoteFormLoading(false)
     }
+  }
+
+  // Toggle a single checklist item directly from the card (Notion-style).
+  const handleToggleItem = async (noteId: string, itemId: string) => {
+    const target = notes.find((n) => n.id === noteId)
+    if (!target || !Array.isArray(target.items)) return
+    const items = target.items.map((it) => (it.id === itemId ? { ...it, done: !it.done } : it))
+    await updateNote(noteId, { items })
   }
 
   const handleCreateCategory = async (name: string, color: string): Promise<Category | null> => {
@@ -244,14 +260,36 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* New note button in sidebar */}
-            <button
-              onClick={() => setShowNewNote(true)}
-              className="flex items-center justify-center gap-1.5 w-full py-2.5 bg-primary text-white text-sm font-semibold rounded-chip hover:bg-[#EA6C0A] active:scale-95 transition-all shadow-md shadow-primary/30"
-            >
-              <LordIcon src={ICONS.edit} trigger="hover" colors={COLOR_WHITE} size={22} />
-              Catatan Baru
-            </button>
+            {/* New note speed-dial in sidebar */}
+            <div className="relative">
+              {dialOpen && (
+                <div className="absolute bottom-full mb-2 inset-x-0 space-y-2">
+                  <button
+                    onClick={() => openNewNote('text')}
+                    className="dial-item flex items-center gap-2 w-full py-2.5 px-3 bg-white border border-border text-sm font-medium rounded-chip hover:border-primary hover:text-primary shadow-sm transition-colors"
+                  >
+                    <LordIcon src={ICONS.note} colors={COLOR_PRIMARY} size={20} />
+                    Tulisan
+                  </button>
+                  <button
+                    onClick={() => openNewNote('todo')}
+                    className="dial-item flex items-center gap-2 w-full py-2.5 px-3 bg-white border border-border text-sm font-medium rounded-chip hover:border-primary hover:text-primary shadow-sm transition-colors"
+                  >
+                    <LordIcon src={ICONS.list} colors={COLOR_PRIMARY} size={20} />
+                    To-do list
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={() => setDialOpen((v) => !v)}
+                className="flex items-center justify-center gap-1.5 w-full py-2.5 bg-primary text-white text-sm font-semibold rounded-chip hover:bg-[#EA6C0A] active:scale-95 transition-all shadow-md shadow-primary/30"
+              >
+                <span className={`inline-flex transition-transform ${dialOpen ? 'rotate-45' : ''}`}>
+                  <LordIcon src={ICONS.add} colors={COLOR_WHITE} size={20} />
+                </span>
+                Catatan Baru
+              </button>
+            </div>
           </aside>
 
           {/* ── MAIN COLUMN ── */}
@@ -302,14 +340,23 @@ export default function DashboardPage() {
                   <LordIcon src={ICONS.note} trigger="loop" colors={COLOR_PRIMARY} size={88} />
                 </div>
                 <h3 className="font-semibold text-text-primary mb-1">Belum ada catatan</h3>
-                <p className="text-sm text-text-secondary mb-4">Tambah catatan pertamamu!</p>
-                <button
-                  onClick={() => setShowNewNote(true)}
-                  className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-2.5 rounded-chip hover:bg-[#EA6C0A] transition-all"
-                >
-                  <LordIcon src={ICONS.add} trigger="hover" colors={COLOR_WHITE} size={20} />
-                  Catatan Baru
-                </button>
+                <p className="text-sm text-text-secondary mb-4">Mulai dengan catatan tulisan atau to-do list!</p>
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => openNewNote('text')}
+                    className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-2.5 rounded-chip hover:bg-[#EA6C0A] transition-all"
+                  >
+                    <LordIcon src={ICONS.note} colors={COLOR_WHITE} size={20} />
+                    Tulisan
+                  </button>
+                  <button
+                    onClick={() => openNewNote('todo')}
+                    className="inline-flex items-center gap-2 bg-white border border-border text-text-primary text-sm font-semibold px-5 py-2.5 rounded-chip hover:border-primary hover:text-primary transition-colors"
+                  >
+                    <LordIcon src={ICONS.list} colors={COLOR_PRIMARY} size={20} />
+                    To-do list
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-7">
@@ -332,6 +379,7 @@ export default function DashboardPage() {
                           onToggleDone={toggleDone}
                           onEdit={setEditingNote}
                           onDelete={deleteNote}
+                          onToggleItem={handleToggleItem}
                         />
                       ))}
                     </div>
@@ -343,25 +391,56 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── FAB (mobile only) ── */}
-      <button
-        onClick={() => setShowNewNote(true)}
-        className="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/40 flex items-center justify-center hover:bg-[#EA6C0A] active:scale-95 transition-all z-30"
-        aria-label="Catatan Baru"
-      >
-        <LordIcon src={ICONS.edit} trigger="hover" colors={COLOR_WHITE} size={30} />
-      </button>
+      {/* ── Speed-dial FAB (mobile only) ── */}
+      {dialOpen && (
+        <div className="lg:hidden fixed inset-0 z-20" onClick={() => setDialOpen(false)} />
+      )}
+      <div className="lg:hidden fixed bottom-6 right-6 z-30 flex flex-col items-end gap-3">
+        {dialOpen && (
+          <>
+            <button onClick={() => openNewNote('todo')} className="dial-item flex items-center gap-2">
+              <span className="bg-white text-text-primary text-xs font-medium px-2.5 py-1 rounded-lg shadow">
+                To-do list
+              </span>
+              <span className="w-12 h-12 bg-white border border-border rounded-full shadow-lg flex items-center justify-center">
+                <LordIcon src={ICONS.list} colors={COLOR_PRIMARY} size={22} />
+              </span>
+            </button>
+            <button onClick={() => openNewNote('text')} className="dial-item flex items-center gap-2">
+              <span className="bg-white text-text-primary text-xs font-medium px-2.5 py-1 rounded-lg shadow">
+                Tulisan
+              </span>
+              <span className="w-12 h-12 bg-white border border-border rounded-full shadow-lg flex items-center justify-center">
+                <LordIcon src={ICONS.note} colors={COLOR_PRIMARY} size={22} />
+              </span>
+            </button>
+          </>
+        )}
+        <button
+          onClick={() => setDialOpen((v) => !v)}
+          className="w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/40 flex items-center justify-center hover:bg-[#EA6C0A] active:scale-95 transition-all"
+          aria-label="Buat catatan"
+        >
+          <span className={`inline-flex transition-transform duration-200 ${dialOpen ? 'rotate-45' : ''}`}>
+            <LordIcon src={ICONS.add} colors={COLOR_WHITE} size={30} />
+          </span>
+        </button>
+      </div>
 
       {/* ── New Note Modal ── */}
       <Modal open={showNewNote} onClose={() => setShowNewNote(false)} className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-text-primary">Catatan Baru</h2>
+          <h2 className="font-bold text-text-primary">
+            {newNoteType === 'todo' ? 'To-do List Baru' : 'Catatan Baru'}
+          </h2>
           <button onClick={() => setShowNewNote(false)} className="text-text-secondary hover:text-text-primary">
             <span className="material-icons">close</span>
           </button>
         </div>
         <NoteForm
+          key={`${newNoteType}-${showNewNote}`}
           categories={categories}
+          noteType={newNoteType}
           onSubmit={handleCreateNote}
           onCreateCategory={handleCreateCategory}
           loading={noteFormLoading}
@@ -378,12 +457,15 @@ export default function DashboardPage() {
         </div>
         {editingNote && (
           <NoteForm
+            key={editingNote.id}
             categories={categories}
             initialData={{
               title: editingNote.title,
               note: editingNote.note,
               scheduledAt: editingNote.scheduledAt,
               categoryId: editingNote.categoryId,
+              type: editingNote.type,
+              items: editingNote.items ?? undefined,
             }}
             onSubmit={handleUpdateNote}
             onCreateCategory={handleCreateCategory}
