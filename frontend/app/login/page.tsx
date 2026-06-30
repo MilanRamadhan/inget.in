@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { getPendingNote, clearPendingNote } from '../../lib/utils'
 import { notesApi } from '../../lib/api'
+import { Logo } from '../../components/Logo'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -44,8 +45,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center">
-          <Link href="/" className="text-lg font-bold text-primary tracking-tight">
-            inget.in
+          <Link href="/">
+            <Logo />
           </Link>
         </div>
       </nav>

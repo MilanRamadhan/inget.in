@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { User } from '../types'
 import { Button } from './ui/Button'
+import { Logo } from './Logo'
 
 interface NavbarProps {
   user?: User | null
@@ -14,8 +15,8 @@ export function Navbar({ user, onLogout, variant = 'landing' }: NavbarProps) {
   return (
     <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-border">
       <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="text-lg font-bold text-primary tracking-tight">
-          inget.in
+        <Link href="/">
+          <Logo />
         </Link>
 
         {user ? (

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { LordIcon } from '../components/LordIcon'
 import { ICONS } from '../lib/icons'
+import { Logo } from '../components/Logo'
 
 const FEATURES = [
   {
@@ -32,7 +33,7 @@ export default function LandingPage() {
       {/* Navbar */}
       <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-          <span className="text-lg font-bold text-primary tracking-tight">inget.in</span>
+          <Logo />
           <Link
             href="/login"
             className="text-sm font-semibold text-primary hover:text-primary-hover transition-colors"

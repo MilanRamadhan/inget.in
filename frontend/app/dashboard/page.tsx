@@ -13,6 +13,7 @@ import { SaveModal } from '../../components/SaveModal'
 import { Modal } from '../../components/ui/Modal'
 import { groupNotesByDate, savePendingNote } from '../../lib/utils'
 import { LordIcon } from '../../components/LordIcon'
+import { Logo } from '../../components/Logo'
 import { ICONS, COLOR_PRIMARY, COLOR_WHITE, COLOR_MUTED } from '../../lib/icons'
 
 export default function DashboardPage() {
@@ -132,7 +133,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-background flex flex-col">
         <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-border">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-            <span className="text-lg font-bold text-primary tracking-tight">inget.in</span>
+            <Logo />
             <div className="flex items-center gap-2">
               <span className="material-icons text-text-secondary text-lg">cloud_off</span>
               <button
@@ -183,7 +184,7 @@ export default function DashboardPage() {
       {/* ── Navbar ── */}
       <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-border">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <span className="text-lg font-bold text-primary tracking-tight">inget.in</span>
+          <Logo />
           <div className="flex items-center gap-3">
             {user.avatar ? (
               <Image

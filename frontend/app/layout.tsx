@@ -4,7 +4,7 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'inget.in — Catatan Cepat Berbasis Waktu',
   description: 'Catat rencanamu berdasarkan waktu dan kategori. Simpel, cepat, dan selalu siap kapanpun kamu butuh.',
-  icons: { icon: '/favicon.ico' },
+  icons: { icon: '/logo.png', apple: '/logo.png' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
