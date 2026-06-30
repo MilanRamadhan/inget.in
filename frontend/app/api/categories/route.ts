@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { listCategories, createCategory } from '@/lib/db'
 import { getAuth } from '@/lib/serverAuth'
 import { ok, fail } from '@/lib/apiResponse'
 
@@ -10,14 +10,11 @@ export async function GET(req: NextRequest) {
   const auth = getAuth(req)
   if (!auth) return fail('Unauthorized', 401)
 
-  const db = supabaseAdmin()
-  const { data, error } = await db
-    .from('Category')
-    .select('*')
-    .eq('userId', auth.id)
-    .order('createdAt', { ascending: true })
-  if (error) return fail(error.message, 500)
-  return ok(data)
+  try {
+    return ok(await listCategories(auth.id))
+  } catch (e: any) {
+    return fail(e?.message || 'Internal server error', 500)
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -28,22 +25,8 @@ export async function POST(req: NextRequest) {
     const { name, color } = await req.json()
     if (!name) return fail('Name is required')
 
-    const db = supabaseAdmin()
-    const now = new Date().toISOString()
-    const { data, error } = await db
-      .from('Category')
-      .insert({
-        id: crypto.randomUUID(),
-        userId: auth.id,
-        name,
-        color: color || '#9CA3AF',
-        createdAt: now,
-        updatedAt: now,
-      })
-      .select('*')
-      .single()
-    if (error) return fail(error.message, 500)
-    return ok(data, 201)
+    const created = await createCategory(auth.id, { name, color })
+    return ok(created, 201)
   } catch (e: any) {
     return fail(e?.message || 'Internal server error', 500)
   }

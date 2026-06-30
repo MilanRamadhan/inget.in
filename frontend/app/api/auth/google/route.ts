@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { findUserByEmail, createUser } from '@/lib/db'
 import { signTokens } from '@/lib/serverAuth'
 import { ok, fail } from '@/lib/apiResponse'
 
@@ -11,19 +11,8 @@ export async function POST(req: NextRequest) {
     const { name, email, avatar } = await req.json()
     if (!name || !email) return fail('Name and email are required')
 
-    const db = supabaseAdmin()
-    let { data: user } = await db.from('User').select('*').eq('email', email).maybeSingle()
-
-    if (!user) {
-      const now = new Date().toISOString()
-      const { data: created, error } = await db
-        .from('User')
-        .insert({ id: crypto.randomUUID(), name, email, avatar: avatar ?? null, createdAt: now, updatedAt: now })
-        .select('*')
-        .single()
-      if (error) return fail(error.message, 500)
-      user = created
-    }
+    let user = await findUserByEmail(email)
+    if (!user) user = await createUser({ name, email, avatar: avatar ?? null })
 
     const tokens = signTokens(user.id, user.email)
     return ok({

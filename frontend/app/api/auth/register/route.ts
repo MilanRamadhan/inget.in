@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { findUserByEmail, createUser } from '@/lib/db'
 import { signTokens } from '@/lib/serverAuth'
 import { ok, fail } from '@/lib/apiResponse'
 
@@ -14,18 +14,10 @@ export async function POST(req: NextRequest) {
     if (typeof password !== 'string' || password.length < 6)
       return fail('Password must be at least 6 characters')
 
-    const db = supabaseAdmin()
-    const { data: existing } = await db.from('User').select('id').eq('email', email).maybeSingle()
-    if (existing) return fail('Email already registered', 409)
+    if (await findUserByEmail(email)) return fail('Email already registered', 409)
 
     const hashed = await bcrypt.hash(password, 10)
-    const now = new Date().toISOString()
-    const { data: user, error } = await db
-      .from('User')
-      .insert({ id: crypto.randomUUID(), name, email, password: hashed, createdAt: now, updatedAt: now })
-      .select('id, name, email')
-      .single()
-    if (error) return fail(error.message, 500)
+    const user = await createUser({ name, email, password: hashed })
 
     const tokens = signTokens(user.id, user.email)
     return ok({ user: { id: user.id, name: user.name, email: user.email }, ...tokens }, 201)

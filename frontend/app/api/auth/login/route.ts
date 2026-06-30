@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { findUserByEmail } from '@/lib/db'
 import { signTokens } from '@/lib/serverAuth'
 import { ok, fail } from '@/lib/apiResponse'
 
@@ -12,8 +12,7 @@ export async function POST(req: NextRequest) {
     const { email, password } = await req.json()
     if (!email || !password) return fail('Email and password are required')
 
-    const db = supabaseAdmin()
-    const { data: user } = await db.from('User').select('*').eq('email', email).maybeSingle()
+    const user = await findUserByEmail(email)
     if (!user || !user.password) return fail('Invalid credentials', 401)
 
     const valid = await bcrypt.compare(password, user.password)
