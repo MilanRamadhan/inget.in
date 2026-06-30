@@ -1,7 +1,9 @@
 import axios from "axios";
 
-// API now lives in this same Next.js app under /api (same-origin, no CORS).
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+// API lives in this same Next.js app under /api (same-origin, no CORS).
+// Hardcoded on purpose — NEXT_PUBLIC_* is baked at build time, so a stale
+// Vercel env var pointing at an old backend would silently break the app.
+const BASE_URL = "/api";
 
 export const api = axios.create({
   baseURL: BASE_URL,
