@@ -57,6 +57,17 @@ export async function createUser(u: {
 
 /* ───────────── Notes (with embedded category) ───────────── */
 
+// Returns categoryId only if it's a real category owned by the user, else null.
+// Compares id as text so a non-UUID value (e.g. a preset id) can't throw.
+async function safeCategoryId(userId: string, categoryId?: string | null): Promise<string | null> {
+  if (!categoryId) return null
+  const sql = getSql()
+  const rows = await sql`
+    SELECT id FROM ingetin."Category"
+    WHERE id::text = ${categoryId} AND "userId" = ${userId} LIMIT 1`
+  return rows.length ? categoryId : null
+}
+
 const noteCols = (sql: postgres.Sql) => sql`
   n.id, n."userId", n."categoryId", n.title, n.note,
   n."scheduledAt", n."isDone", n."createdAt", n."updatedAt",
@@ -100,9 +111,10 @@ export async function createNote(
   const sql = getSql()
   const id = crypto.randomUUID()
   const now = new Date().toISOString()
+  const categoryId = await safeCategoryId(userId, d.categoryId)
   await sql`
     INSERT INTO ingetin."Note" (id, "userId", title, note, "scheduledAt", "categoryId", "isDone", "createdAt", "updatedAt")
-    VALUES (${id}, ${userId}, ${d.title}, ${d.note ?? null}, ${d.scheduledAt || null}, ${d.categoryId || null}, ${d.isDone ?? false}, ${now}, ${now})`
+    VALUES (${id}, ${userId}, ${d.title}, ${d.note ?? null}, ${d.scheduledAt || null}, ${categoryId}, ${d.isDone ?? false}, ${now}, ${now})`
   return getNote(id)
 }
 
@@ -112,7 +124,10 @@ export async function updateNote(id: string, current: any, body: any): Promise<a
     title: 'title' in body ? body.title : current.title,
     note: 'note' in body ? body.note ?? null : current.note,
     scheduledAt: 'scheduledAt' in body ? body.scheduledAt || null : current.scheduledAt,
-    categoryId: 'categoryId' in body ? body.categoryId || null : current.categoryId,
+    categoryId:
+      'categoryId' in body
+        ? await safeCategoryId(current.userId, body.categoryId)
+        : current.categoryId,
     isDone: 'isDone' in body ? body.isDone : current.isDone,
   }
   await sql`

@@ -73,6 +73,27 @@ export function NoteForm({
     ...localCats,
   ]
 
+  // Turn the selected chip into a real DB category id. Presets (Kerja/Kuliah/
+  // Pribadi) and locally-created chips have fake ids that don't exist in the DB
+  // and would break the note's foreign key — so materialize them on save.
+  const resolveCategoryId = async (): Promise<string> => {
+    if (!selectedCategory) return ''
+    if (categories.some((c) => c.id === selectedCategory)) return selectedCategory
+
+    const src =
+      PRESET_CATEGORIES.find((p) => p.id === selectedCategory) ||
+      localCats.find((l) => l.id === selectedCategory)
+    if (!src) return selectedCategory // not a preset/local id — assume a real id
+
+    const existing = categories.find((c) => c.name.toLowerCase() === src.name.toLowerCase())
+    if (existing) return existing.id
+    if (onCreateCategory) {
+      const created = await onCreateCategory(src.name, src.color)
+      return created?.id || ''
+    }
+    return ''
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
@@ -90,7 +111,8 @@ export function NoteForm({
       return
     }
 
-    await onSubmit({ title, note, scheduledAt, categoryId: selectedCategory })
+    const categoryId = await resolveCategoryId()
+    await onSubmit({ title, note, scheduledAt, categoryId })
   }
 
   const handleAddCategory = async () => {
