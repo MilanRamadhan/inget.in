@@ -24,7 +24,7 @@ export function Modal({ open, onClose, children, className = '' }: ModalProps) {
     >
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div
-        className={`relative w-full sm:max-w-md bg-white rounded-t-modal sm:rounded-modal shadow-2xl z-10 ${className}`}
+        className={`relative w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-lg overflow-y-auto bg-white rounded-none sm:rounded-modal shadow-2xl z-10 ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

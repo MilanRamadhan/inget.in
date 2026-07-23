@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useAuth } from '../../hooks/useAuth'
 import { useNotes } from '../../hooks/useNotes'
 import { categoriesApi } from '../../lib/api'
-import { Category, Note } from '../../types'
+import { Category, Note, NoteType, TodoItem } from '../../types'
 import { NoteCard } from '../../components/NoteCard'
 import { NoteForm } from '../../components/NoteForm'
 import { CategoryFilter } from '../../components/CategoryFilter'
@@ -26,12 +26,12 @@ export default function DashboardPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [showNewNote, setShowNewNote] = useState(false)
-  const [newNoteType, setNewNoteType] = useState<'text' | 'todo'>('text')
+  const [newNoteType, setNewNoteType] = useState<NoteType>('text')
   const [dialOpen, setDialOpen] = useState(false)
   const [editingNote, setEditingNote] = useState<Note | null>(null)
   const [noteFormLoading, setNoteFormLoading] = useState(false)
 
-  const openNewNote = (type: 'text' | 'todo') => {
+  const openNewNote = (type: NoteType) => {
     setNewNoteType(type)
     setShowNewNote(true)
     setDialOpen(false)
@@ -97,7 +97,11 @@ export default function DashboardPage() {
   const handleToggleItem = async (noteId: string, itemId: string) => {
     const target = notes.find((n) => n.id === noteId)
     if (!target || !Array.isArray(target.items)) return
-    const items = target.items.map((it) => (it.id === itemId ? { ...it, done: !it.done } : it))
+    const items = target.items.map((item) => {
+      if (!('done' in item)) return item
+      const todo = item as TodoItem
+      return todo.id === itemId ? { ...todo, done: !todo.done } : todo
+    })
     await updateNote(noteId, { items })
   }
 
@@ -135,7 +139,7 @@ export default function DashboardPage() {
           <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
             <Logo />
             <div className="flex items-center gap-2">
-              <span className="material-icons text-text-secondary text-lg">cloud_off</span>
+              <LordIcon src={ICONS.cloudOff} colors={COLOR_MUTED} size={19} />
               <button
                 onClick={() => router.push('/login')}
                 className="text-sm font-semibold text-primary hover:text-[#EA6C0A] transition-colors"
@@ -148,7 +152,7 @@ export default function DashboardPage() {
 
         <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6">
           <div className="bg-primary-light border border-orange-200 rounded-card p-3 mb-6 flex items-start gap-2">
-            <span className="material-icons text-primary text-base leading-5 flex-shrink-0 mt-0.5">info</span>
+            <LordIcon src={ICONS.info} colors={COLOR_PRIMARY} size={18} className="mt-0.5 flex-shrink-0" />
             <p className="text-xs text-primary leading-relaxed">
               Login untuk menyimpan catatanmu secara permanen dan akses di perangkat lain.
             </p>
@@ -279,6 +283,13 @@ export default function DashboardPage() {
                     <LordIcon src={ICONS.list} colors={COLOR_PRIMARY} size={20} />
                     To-do list
                   </button>
+                  <button
+                    onClick={() => openNewNote('finance')}
+                    className="dial-item flex items-center gap-2 w-full py-2.5 px-3 bg-white border border-border text-sm font-medium rounded-chip hover:border-primary hover:text-primary shadow-sm transition-colors"
+                  >
+                    <LordIcon src={ICONS.wallet} colors={COLOR_PRIMARY} size={20} />
+                    Keuangan
+                  </button>
                 </div>
               )}
               <button
@@ -302,7 +313,7 @@ export default function DashboardPage() {
               <h1 className="text-xl font-bold text-text-primary mt-1">
                 Hei, {user.name.split(' ')[0]}
                 <span className="ml-1.5 inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10">
-                  <span className="material-icons text-sm leading-none text-primary">waving_hand</span>
+                  <LordIcon src={ICONS.wave} colors={COLOR_PRIMARY} size={14} />
                 </span>
               </h1>
               <p className="text-sm text-text-secondary mt-0.5">Semoga harimu menyenangkan!</p>
@@ -314,7 +325,7 @@ export default function DashboardPage() {
                 <h1 className="text-xl font-bold text-text-primary">
                   Hei, {user.name.split(' ')[0]}
                   <span className="ml-1.5 inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 align-middle">
-                    <span className="material-icons text-sm leading-none text-primary">waving_hand</span>
+                    <LordIcon src={ICONS.wave} colors={COLOR_PRIMARY} size={14} />
                   </span>
                 </h1>
                 <p className="text-sm text-text-secondary mt-0.5">Semoga harimu menyenangkan!</p>
@@ -341,8 +352,8 @@ export default function DashboardPage() {
                   <LordIcon src={ICONS.note} trigger="loop" colors={COLOR_PRIMARY} size={88} />
                 </div>
                 <h3 className="font-semibold text-text-primary mb-1">Belum ada catatan</h3>
-                <p className="text-sm text-text-secondary mb-4">Mulai dengan catatan tulisan atau to-do list!</p>
-                <div className="flex items-center justify-center gap-2">
+                <p className="text-sm text-text-secondary mb-4">Pilih format catatan yang kamu butuhkan.</p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
                   <button
                     onClick={() => openNewNote('text')}
                     className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-2.5 rounded-chip hover:bg-[#EA6C0A] transition-all"
@@ -356,6 +367,13 @@ export default function DashboardPage() {
                   >
                     <LordIcon src={ICONS.list} colors={COLOR_PRIMARY} size={20} />
                     To-do list
+                  </button>
+                  <button
+                    onClick={() => openNewNote('finance')}
+                    className="inline-flex items-center gap-2 bg-white border border-border text-text-primary text-sm font-semibold px-5 py-2.5 rounded-chip hover:border-primary hover:text-primary transition-colors"
+                  >
+                    <LordIcon src={ICONS.wallet} colors={COLOR_PRIMARY} size={20} />
+                    Keuangan
                   </button>
                 </div>
               </div>
@@ -372,7 +390,7 @@ export default function DashboardPage() {
                       </span>
                     </div>
                     {/* Sticky-note grid: 1 col → 2 col → 3 col */}
-                    <div className="grid grid-cols-1 min-[480px]:grid-cols-2 xl:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3">
                       {dateNotes.map((note) => (
                         <NoteCard
                           key={note.id}
@@ -399,6 +417,14 @@ export default function DashboardPage() {
       <div className="lg:hidden fixed bottom-6 right-6 z-30 flex flex-col items-end gap-3">
         {dialOpen && (
           <>
+            <button onClick={() => openNewNote('finance')} className="dial-item flex items-center gap-2">
+              <span className="bg-white text-text-primary text-xs font-medium px-2.5 py-1 rounded-lg shadow">
+                Keuangan
+              </span>
+              <span className="w-12 h-12 bg-white border border-border rounded-full shadow-lg flex items-center justify-center">
+                <LordIcon src={ICONS.wallet} colors={COLOR_PRIMARY} size={22} />
+              </span>
+            </button>
             <button onClick={() => openNewNote('todo')} className="dial-item flex items-center gap-2">
               <span className="bg-white text-text-primary text-xs font-medium px-2.5 py-1 rounded-lg shadow">
                 To-do list
@@ -430,12 +456,16 @@ export default function DashboardPage() {
 
       {/* ── New Note Modal ── */}
       <Modal open={showNewNote} onClose={() => setShowNewNote(false)} className="p-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="sticky top-0 z-10 -mx-5 -mt-5 mb-4 flex items-center justify-between border-b border-border bg-white/95 px-5 py-4 backdrop-blur">
           <h2 className="font-bold text-text-primary">
-            {newNoteType === 'todo' ? 'To-do List Baru' : 'Catatan Baru'}
+            {newNoteType === 'todo'
+              ? 'To-do List Baru'
+              : newNoteType === 'finance'
+                ? 'Catatan Keuangan'
+                : 'Catatan Baru'}
           </h2>
           <button onClick={() => setShowNewNote(false)} className="text-text-secondary hover:text-text-primary">
-            <span className="material-icons">close</span>
+            <LordIcon src={ICONS.close} colors={COLOR_MUTED} size={22} />
           </button>
         </div>
         <NoteForm
@@ -450,10 +480,16 @@ export default function DashboardPage() {
 
       {/* ── Edit Note Modal ── */}
       <Modal open={!!editingNote} onClose={() => setEditingNote(null)} className="p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-text-primary">Edit Catatan</h2>
+        <div className="sticky top-0 z-10 -mx-5 -mt-5 mb-4 flex items-center justify-between border-b border-border bg-white/95 px-5 py-4 backdrop-blur">
+          <h2 className="font-bold text-text-primary">
+            {editingNote?.type === 'todo'
+              ? 'Edit To-do List'
+              : editingNote?.type === 'finance'
+                ? 'Edit Keuangan'
+                : 'Edit Catatan'}
+          </h2>
           <button onClick={() => setEditingNote(null)} className="text-text-secondary hover:text-text-primary">
-            <span className="material-icons">close</span>
+            <LordIcon src={ICONS.close} colors={COLOR_MUTED} size={22} />
           </button>
         </div>
         {editingNote && (

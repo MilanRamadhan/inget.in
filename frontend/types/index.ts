@@ -20,7 +20,14 @@ export interface TodoItem {
   done: boolean
 }
 
-export type NoteType = 'text' | 'todo'
+export interface FinanceEntry {
+  id: string
+  description: string
+  amount: number
+  kind: 'income' | 'expense'
+}
+
+export type NoteType = 'text' | 'todo' | 'finance'
 
 export interface Note {
   id: string
@@ -32,7 +39,7 @@ export interface Note {
   scheduledAt?: string
   isDone: boolean
   type?: NoteType
-  items?: TodoItem[] | null
+  items?: TodoItem[] | FinanceEntry[] | null
   createdAt: string
   updatedAt: string
 }

@@ -120,8 +120,8 @@ export async function createNote(
   const id = crypto.randomUUID()
   const now = new Date().toISOString()
   const categoryId = await safeCategoryId(userId, d.categoryId)
-  const type = d.type === 'todo' ? 'todo' : 'text'
-  const items = type === 'todo' && Array.isArray(d.items) ? d.items : null
+  const type = d.type === 'todo' || d.type === 'finance' ? d.type : 'text'
+  const items = type !== 'text' && Array.isArray(d.items) ? d.items : null
   await sql`
     INSERT INTO ingetin."Note" (id, "userId", title, note, "scheduledAt", "categoryId", "isDone", "type", "items", "createdAt", "updatedAt")
     VALUES (${id}, ${userId}, ${d.title}, ${d.note ?? null}, ${d.scheduledAt || null}, ${categoryId}, ${d.isDone ?? false}, ${type}, ${items ? sql.json(items) : null}, ${now}, ${now})`
@@ -139,7 +139,12 @@ export async function updateNote(id: string, current: any, body: any): Promise<a
         ? await safeCategoryId(current.userId, body.categoryId)
         : current.categoryId,
     isDone: 'isDone' in body ? body.isDone : current.isDone,
-    type: 'type' in body ? (body.type === 'todo' ? 'todo' : 'text') : current.type,
+    type:
+      'type' in body
+        ? body.type === 'todo' || body.type === 'finance'
+          ? body.type
+          : 'text'
+        : current.type,
     items: 'items' in body ? body.items : current.items,
   }
   const items = Array.isArray(merged.items) ? merged.items : null

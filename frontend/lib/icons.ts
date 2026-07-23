@@ -10,16 +10,26 @@ export const ICONS = {
   save: 'save',
   search: 'search',
   logout: 'logout',
+  close: 'close',
+  more: 'more',
+  arrow: 'arrow',
 
   // UI / navigation
   user: 'user',
   home: 'home',
   settings: 'settings',
   bell: 'bell',
+  cloud: 'cloud',
+  cloudOff: 'cloudOff',
+  info: 'info',
+  wave: 'wave',
 
   // Content
   note: 'note',
   list: 'list',
+  wallet: 'wallet',
+  income: 'income',
+  expense: 'expense',
   folder: 'folder',
   calendar: 'calendar',
   clock: 'clock',
