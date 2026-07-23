@@ -181,13 +181,26 @@ export default function DashboardPage() {
   /* ─────────────────────────────────────────────
      LOGGED-IN VIEW
   ───────────────────────────────────────────── */
+  const financeNotes = notes
+    .filter((note) => note.type === 'finance')
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
   const reminderNotes = notes
-    .filter((note) => Boolean(note.scheduledAt))
+    .filter((note) => note.type !== 'finance' && Boolean(note.scheduledAt))
     .sort((a, b) => (a.scheduledAt ?? '').localeCompare(b.scheduledAt ?? ''))
   const recentNotes = notes
-    .filter((note) => !note.scheduledAt)
+    .filter((note) => note.type !== 'finance' && !note.scheduledAt)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
   const noteRows = [
+    {
+      id: 'finance',
+      title: 'Keuangan',
+      description: 'Ringkasan catatan keuangan',
+      icon: ICONS.wallet,
+      notes: financeNotes,
+      emptyMessage: 'Belum ada catatan keuangan.',
+      cardClassName:
+        'h-[168px] w-[62vw] max-w-[230px] md:h-[200px] md:w-[250px]',
+    },
     {
       id: 'reminders',
       title: 'Pengingat',
@@ -195,6 +208,8 @@ export default function DashboardPage() {
       icon: ICONS.bell,
       notes: reminderNotes,
       emptyMessage: 'Belum ada catatan dengan pengingat.',
+      cardClassName:
+        'h-[148px] w-[58vw] max-w-[215px] md:h-[176px] md:w-[235px]',
     },
     {
       id: 'recent',
@@ -203,6 +218,8 @@ export default function DashboardPage() {
       icon: ICONS.note,
       notes: recentNotes,
       emptyMessage: 'Belum ada catatan tanpa pengingat.',
+      cardClassName:
+        'h-[160px] w-[60vw] max-w-[225px] md:h-[190px] md:w-[245px]',
     },
   ]
   const viewingNote = viewingNoteId
@@ -436,7 +453,7 @@ export default function DashboardPage() {
                         {row.notes.map((note) => (
                           <div
                             key={note.id}
-                            className="h-[168px] w-[62vw] max-w-[230px] flex-none snap-start self-stretch sm:h-[210px] sm:w-[250px]"
+                            className={`${row.cardClassName} flex-none snap-start self-stretch`}
                           >
                             <NoteCard
                               note={note}
