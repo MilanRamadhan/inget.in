@@ -8,6 +8,7 @@ import { categoriesApi } from '../../lib/api'
 import { Category, Note, NoteType, TodoItem } from '../../types'
 import { NoteCard } from '../../components/NoteCard'
 import { NoteDetail } from '../../components/NoteDetail'
+import { CategoryManager } from '../../components/CategoryManager'
 import { NoteForm } from '../../components/NoteForm'
 import { CategoryFilter } from '../../components/CategoryFilter'
 import { SaveModal } from '../../components/SaveModal'
@@ -29,6 +30,7 @@ export default function DashboardPage() {
   const [showNewNote, setShowNewNote] = useState(false)
   const [newNoteType, setNewNoteType] = useState<NoteType>('text')
   const [dialOpen, setDialOpen] = useState(false)
+  const [showCategoryManager, setShowCategoryManager] = useState(false)
   const [viewingNoteId, setViewingNoteId] = useState<string | null>(null)
   const [editingNote, setEditingNote] = useState<Note | null>(null)
   const [noteFormLoading, setNoteFormLoading] = useState(false)
@@ -116,6 +118,15 @@ export default function DashboardPage() {
     } catch {
       return null
     }
+  }
+
+  const handleDeleteCategory = async (id: string) => {
+    await categoriesApi.delete(id)
+    setCategories((current) => current.filter((category) => category.id !== id))
+
+    const nextCategory = selectedCategory === id ? 'all' : selectedCategory
+    if (nextCategory !== selectedCategory) setSelectedCategory(nextCategory)
+    await fetchNotes(nextCategory !== 'all' ? { category: nextCategory } : undefined)
   }
 
   const handleLogout = () => {
@@ -306,6 +317,7 @@ export default function DashboardPage() {
                 categories={categories}
                 selected={selectedCategory}
                 onChange={handleCategoryChange}
+                onManage={() => setShowCategoryManager(true)}
                 vertical
               />
             </div>
@@ -383,6 +395,7 @@ export default function DashboardPage() {
                 categories={categories}
                 selected={selectedCategory}
                 onChange={handleCategoryChange}
+                onManage={() => setShowCategoryManager(true)}
               />
             </div>
 
@@ -477,6 +490,18 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Speed-dial FAB (mobile only) ── */}
+      <Modal
+        open={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+        className="p-0"
+      >
+        <CategoryManager
+          categories={categories}
+          onClose={() => setShowCategoryManager(false)}
+          onDelete={handleDeleteCategory}
+        />
+      </Modal>
+
       <Modal open={!!viewingNote} onClose={() => setViewingNoteId(null)} className="p-0">
         {viewingNote && (
           <NoteDetail

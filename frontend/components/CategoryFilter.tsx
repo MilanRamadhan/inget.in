@@ -1,10 +1,13 @@
 'use client'
 import { Category } from '../types'
+import { LordIcon } from './LordIcon'
+import { COLOR_MUTED, ICONS } from '../lib/icons'
 
 interface CategoryFilterProps {
   categories: Category[]
   selected: string
   onChange: (id: string) => void
+  onManage?: () => void
   /** vertical = sidebar list mode; default = horizontal scroll chips */
   vertical?: boolean
 }
@@ -16,7 +19,13 @@ const DEFAULT_CATEGORIES = [
   { id: 'pribadi', name: 'Pribadi', color: '#10B981', icon: 'person_outline' },
 ]
 
-export function CategoryFilter({ categories, selected, onChange, vertical = false }: CategoryFilterProps) {
+export function CategoryFilter({
+  categories,
+  selected,
+  onChange,
+  onManage,
+  vertical = false,
+}: CategoryFilterProps) {
   const allCategories = [
     ...DEFAULT_CATEGORIES,
     ...categories
@@ -47,6 +56,16 @@ export function CategoryFilter({ categories, selected, onChange, vertical = fals
             </button>
           )
         })}
+        {onManage && (
+          <button
+            type="button"
+            onClick={onManage}
+            className="mt-2 flex w-full items-center gap-2.5 border-t border-border px-3 pt-3 text-left text-sm font-medium text-text-secondary hover:text-text-primary"
+          >
+            <LordIcon src={ICONS.settings} colors={COLOR_MUTED} size={18} />
+            <span>Kelola kategori</span>
+          </button>
+        )}
       </div>
     )
   }
@@ -73,6 +92,16 @@ export function CategoryFilter({ categories, selected, onChange, vertical = fals
           </button>
         )
       })}
+      {onManage && (
+        <button
+          type="button"
+          onClick={onManage}
+          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-border bg-white text-text-secondary"
+          aria-label="Kelola kategori"
+        >
+          <LordIcon src={ICONS.settings} colors={COLOR_MUTED} size={17} />
+        </button>
+      )}
     </div>
   )
 }

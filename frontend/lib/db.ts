@@ -213,5 +213,11 @@ export async function updateCategory(id: string, current: any, body: any): Promi
 
 export async function deleteCategory(id: string): Promise<void> {
   const sql = getSql()
-  await sql`DELETE FROM ingetin."Category" WHERE id = ${id}`
+  await sql.begin(async (transaction) => {
+    await transaction`
+      UPDATE ingetin."Note"
+      SET "categoryId" = NULL
+      WHERE "categoryId" = ${id}`
+    await transaction`DELETE FROM ingetin."Category" WHERE id = ${id}`
+  })
 }
