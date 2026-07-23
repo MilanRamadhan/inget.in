@@ -11,7 +11,7 @@ import { NoteForm } from '../../components/NoteForm'
 import { CategoryFilter } from '../../components/CategoryFilter'
 import { SaveModal } from '../../components/SaveModal'
 import { Modal } from '../../components/ui/Modal'
-import { groupNotesByDate, savePendingNote } from '../../lib/utils'
+import { savePendingNote } from '../../lib/utils'
 import { LordIcon } from '../../components/LordIcon'
 import { Logo } from '../../components/Logo'
 import { ICONS, COLOR_PRIMARY, COLOR_WHITE, COLOR_MUTED } from '../../lib/icons'
@@ -179,7 +179,30 @@ export default function DashboardPage() {
   /* ─────────────────────────────────────────────
      LOGGED-IN VIEW
   ───────────────────────────────────────────── */
-  const grouped = groupNotesByDate(notes)
+  const reminderNotes = notes
+    .filter((note) => Boolean(note.scheduledAt))
+    .sort((a, b) => (a.scheduledAt ?? '').localeCompare(b.scheduledAt ?? ''))
+  const recentNotes = notes
+    .filter((note) => !note.scheduledAt)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  const noteRows = [
+    {
+      id: 'reminders',
+      title: 'Pengingat',
+      description: 'Urut berdasarkan jadwal terdekat',
+      icon: ICONS.bell,
+      notes: reminderNotes,
+      emptyMessage: 'Belum ada catatan dengan pengingat.',
+    },
+    {
+      id: 'recent',
+      title: 'Catatan terbaru',
+      description: 'Terakhir dibuat atau diedit',
+      icon: ICONS.note,
+      notes: recentNotes,
+      emptyMessage: 'Belum ada catatan tanpa pengingat.',
+    },
+  ]
   const totalNotes = notes.length
   const doneNotes = notes.filter((n) => n.isDone).length
 
@@ -378,31 +401,54 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-7">
-                {Object.entries(grouped).map(([date, dateNotes]) => (
-                  <div key={date}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                        {date}
-                      </h2>
-                      <span className="text-xs bg-gray-200 text-text-secondary px-1.5 py-0.5 rounded-full font-medium">
-                        {dateNotes.length}
+              <div className="space-y-8">
+                {noteRows.map((row) => (
+                  <section key={row.id} aria-labelledby={`${row.id}-title`}>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+                          <LordIcon src={row.icon} colors={COLOR_PRIMARY} size={17} />
+                        </span>
+                        <div className="min-w-0">
+                          <h2
+                            id={`${row.id}-title`}
+                            className="text-sm font-bold text-text-primary"
+                          >
+                            {row.title}
+                          </h2>
+                          <p className="truncate text-[11px] text-text-secondary">
+                            {row.description}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="flex-shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-xs font-semibold text-text-secondary">
+                        {row.notes.length}
                       </span>
                     </div>
-                    {/* Sticky-note grid: 1 col → 2 col → 3 col */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3">
-                      {dateNotes.map((note) => (
-                        <NoteCard
-                          key={note.id}
-                          note={note}
-                          onToggleDone={toggleDone}
-                          onEdit={setEditingNote}
-                          onDelete={deleteNote}
-                          onToggleItem={handleToggleItem}
-                        />
-                      ))}
-                    </div>
-                  </div>
+
+                    {row.notes.length > 0 ? (
+                      <div className="-mx-4 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-4 pb-3 scrollbar-hide sm:mx-0 sm:px-0">
+                        {row.notes.map((note) => (
+                          <div
+                            key={note.id}
+                            className="w-[76vw] max-w-[280px] flex-none snap-start self-stretch sm:w-[260px]"
+                          >
+                            <NoteCard
+                              note={note}
+                              onToggleDone={toggleDone}
+                              onEdit={setEditingNote}
+                              onDelete={deleteNote}
+                              onToggleItem={handleToggleItem}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-card border border-dashed border-border px-4 py-5 text-sm text-text-secondary">
+                        {row.emptyMessage}
+                      </div>
+                    )}
+                  </section>
                 ))}
               </div>
             )}

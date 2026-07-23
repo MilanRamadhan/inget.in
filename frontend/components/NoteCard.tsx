@@ -67,7 +67,7 @@ export function NoteCard({
 
   return (
     <article
-      className="note-card relative cursor-pointer break-inside-avoid rounded-card p-3 transition-transform active:scale-[0.98] sm:p-4"
+      className="note-card relative h-full cursor-pointer break-inside-avoid rounded-card p-3 transition-transform active:scale-[0.98] sm:p-4"
       style={{ backgroundColor: background }}
       onClick={() => onEdit(note)}
     >
