@@ -63,7 +63,7 @@ export function NoteCard({
 
   return (
     <article
-      className="note-card relative flex h-full cursor-pointer flex-col overflow-hidden rounded-card p-3 transition-transform active:scale-[0.98] sm:p-4"
+      className="note-card relative flex w-full cursor-pointer flex-col rounded-card p-3 transition-transform active:scale-[0.98] sm:p-4"
       style={{ backgroundColor: background }}
       onClick={() => onOpen(note)}
     >
@@ -90,7 +90,7 @@ export function NoteCard({
             </span>
           </div>
           <h3
-            className={`line-clamp-2 text-sm font-bold leading-snug text-text-primary ${
+            className={`break-words text-sm font-bold leading-snug text-text-primary ${
               note.isDone ? 'line-through opacity-50' : ''
             }`}
           >
@@ -148,7 +148,7 @@ export function NoteCard({
                 {item.done && <LordIcon src={ICONS.check} colors="primary:#fff" size={10} />}
               </span>
               <span
-                className={`line-clamp-2 text-[11px] leading-4 ${
+                className={`min-w-0 flex-1 whitespace-pre-wrap break-words text-[11px] leading-4 ${
                   item.done ? 'text-text-secondary line-through' : 'text-text-primary'
                 }`}
               >
@@ -176,13 +176,13 @@ export function NoteCard({
         <div className="mb-2 space-y-1.5">
           <div className="rounded-input bg-white/60 p-2">
             <p className="text-[10px] text-text-secondary">Saldo</p>
-            <p className={`truncate text-sm font-bold ${income - expense >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+            <p className={`break-words text-sm font-bold ${income - expense >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
               {rupiah(income - expense)}
             </p>
           </div>
-          <div className="flex gap-2 text-[10px]">
-            <span className="truncate text-emerald-700">+ {rupiah(income)}</span>
-            <span className="truncate text-red-600">- {rupiah(expense)}</span>
+          <div className="flex flex-wrap gap-x-2 gap-y-1 text-[10px]">
+            <span className="text-emerald-700">+ {rupiah(income)}</span>
+            <span className="text-red-600">- {rupiah(expense)}</span>
           </div>
         </div>
       )}
@@ -193,14 +193,14 @@ export function NoteCard({
         </p>
       )}
 
-      <footer className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-black/5 pt-2">
+      <footer className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-black/5 pt-2">
         {(date || time) && (
           <span className="text-[10px] text-text-secondary">
             {date}{time ? ` · ${time}` : ''}
           </span>
         )}
         {note.category && (
-          <span className="max-w-full truncate rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-semibold" style={{ color }}>
+          <span className="max-w-full break-words rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-semibold" style={{ color }}>
             {note.category.name}
           </span>
         )}

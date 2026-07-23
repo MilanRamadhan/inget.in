@@ -210,7 +210,7 @@ export default function DashboardPage() {
       notes: financeNotes,
       emptyMessage: 'Belum ada catatan keuangan.',
       cardClassName:
-        'h-[168px] w-[62vw] max-w-[230px] md:h-[200px] md:w-[250px]',
+        'w-[72vw] max-w-[280px] md:w-[290px]',
     },
     {
       id: 'reminders',
@@ -220,7 +220,7 @@ export default function DashboardPage() {
       notes: reminderNotes,
       emptyMessage: 'Belum ada catatan dengan pengingat.',
       cardClassName:
-        'h-[148px] w-[58vw] max-w-[215px] md:h-[176px] md:w-[235px]',
+        'w-[62vw] max-w-[230px] md:w-[245px]',
     },
     {
       id: 'recent',
@@ -230,7 +230,7 @@ export default function DashboardPage() {
       notes: recentNotes,
       emptyMessage: 'Belum ada catatan tanpa pengingat.',
       cardClassName:
-        'h-[160px] w-[60vw] max-w-[225px] md:h-[190px] md:w-[245px]',
+        'w-[68vw] max-w-[260px] md:w-[270px]',
     },
   ]
   const viewingNote = viewingNoteId
@@ -462,11 +462,11 @@ export default function DashboardPage() {
                     </div>
 
                     {row.notes.length > 0 ? (
-                      <div className="-mx-4 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-4 pb-3 scrollbar-hide sm:mx-0 sm:px-0">
+                      <div className="-mx-4 flex snap-x snap-mandatory items-start gap-3 overflow-x-auto px-4 pb-3 scrollbar-hide sm:mx-0 sm:px-0">
                         {row.notes.map((note) => (
                           <div
                             key={note.id}
-                            className={`${row.cardClassName} flex-none snap-start self-stretch`}
+                            className={`${row.cardClassName} flex-none snap-start`}
                           >
                             <NoteCard
                               note={note}
