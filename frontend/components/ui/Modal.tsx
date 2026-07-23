@@ -10,9 +10,12 @@ interface ModalProps {
 
 export function Modal({ open, onClose, children, className = '' }: ModalProps) {
   useEffect(() => {
-    if (open) document.body.style.overflow = 'hidden'
-    else document.body.style.overflow = ''
-    return () => { document.body.style.overflow = '' }
+    if (!open) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
   }, [open])
 
   if (!open) return null

@@ -8,10 +8,8 @@ import { ICONS, COLOR_DANGER, COLOR_MUTED } from '../lib/icons'
 
 interface NoteCardProps {
   note: Note
-  onToggleDone: (id: string) => void
-  onEdit: (note: Note) => void
+  onOpen: (note: Note) => void
   onDelete: (id: string) => void
-  onToggleItem?: (noteId: string, itemId: string) => void
 }
 
 function isFinanceEntry(item: TodoItem | FinanceEntry): item is FinanceEntry {
@@ -29,10 +27,8 @@ function rupiah(value: number) {
 
 export function NoteCard({
   note,
-  onToggleDone,
-  onEdit,
+  onOpen,
   onDelete,
-  onToggleItem,
 }: NoteCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -67,9 +63,9 @@ export function NoteCard({
 
   return (
     <article
-      className="note-card relative h-full cursor-pointer break-inside-avoid rounded-card p-3 transition-transform active:scale-[0.98] sm:p-4"
+      className="note-card relative flex h-full cursor-pointer flex-col overflow-hidden rounded-card p-3 transition-transform active:scale-[0.98] sm:p-4"
       style={{ backgroundColor: background }}
-      onClick={() => onEdit(note)}
+      onClick={() => onOpen(note)}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -116,20 +112,9 @@ export function NoteCard({
           </button>
           {menuOpen && (
             <div
-              className="absolute right-0 top-8 z-20 min-w-[136px] rounded-card border border-border bg-white py-1 shadow-xl"
+              className="absolute right-0 top-8 z-20 min-w-[120px] rounded-card border border-border bg-white py-1 shadow-xl"
               onClick={(event) => event.stopPropagation()}
             >
-              <button
-                type="button"
-                onClick={() => {
-                  onEdit(note)
-                  setMenuOpen(false)
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text-primary"
-              >
-                <LordIcon src={ICONS.edit} colors={COLOR_MUTED} size={17} />
-                Edit
-              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -148,14 +133,9 @@ export function NoteCard({
 
       {note.type === 'todo' && (
         <div className="mb-2 space-y-1.5">
-          {todoItems.slice(0, 3).map((item) => (
-            <button
+          {todoItems.slice(0, 2).map((item) => (
+            <div
               key={item.id}
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation()
-                onToggleItem?.(note.id, item.id)
-              }}
               className="flex w-full items-start gap-1.5 text-left"
             >
               <span
@@ -174,10 +154,10 @@ export function NoteCard({
               >
                 {item.text}
               </span>
-            </button>
+            </div>
           ))}
-          {todoItems.length > 3 && (
-            <p className="pl-5 text-[10px] text-text-secondary">+{todoItems.length - 3} item</p>
+          {todoItems.length > 2 && (
+            <p className="pl-5 text-[10px] text-text-secondary">+{todoItems.length - 2} item</p>
           )}
           <div className="h-1 overflow-hidden rounded-full bg-white/70">
             <div
@@ -208,12 +188,12 @@ export function NoteCard({
       )}
 
       {(note.type === 'text' || !note.type) && note.note && (
-        <p className="mb-2 whitespace-pre-line text-xs leading-5 text-text-secondary line-clamp-4">
+        <p className="mb-2 line-clamp-2 whitespace-pre-line text-xs leading-5 text-text-secondary sm:line-clamp-3">
           {note.note}
         </p>
       )}
 
-      <footer className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-black/5 pt-2">
+      <footer className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-black/5 pt-2">
         {(date || time) && (
           <span className="text-[10px] text-text-secondary">
             {date}{time ? ` · ${time}` : ''}
@@ -224,17 +204,10 @@ export function NoteCard({
             {note.category.name}
           </span>
         )}
-        {note.type !== 'finance' && (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation()
-              onToggleDone(note.id)
-            }}
-            className="ml-auto text-[10px] font-semibold text-text-secondary"
-          >
-            {note.isDone ? 'Buka lagi' : 'Selesai'}
-          </button>
+        {note.isDone && (
+          <span className="ml-auto text-[10px] font-semibold text-emerald-700">
+            Selesai
+          </span>
         )}
       </footer>
     </article>

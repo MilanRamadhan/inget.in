@@ -7,6 +7,7 @@ import { useNotes } from '../../hooks/useNotes'
 import { categoriesApi } from '../../lib/api'
 import { Category, Note, NoteType, TodoItem } from '../../types'
 import { NoteCard } from '../../components/NoteCard'
+import { NoteDetail } from '../../components/NoteDetail'
 import { NoteForm } from '../../components/NoteForm'
 import { CategoryFilter } from '../../components/CategoryFilter'
 import { SaveModal } from '../../components/SaveModal'
@@ -28,6 +29,7 @@ export default function DashboardPage() {
   const [showNewNote, setShowNewNote] = useState(false)
   const [newNoteType, setNewNoteType] = useState<NoteType>('text')
   const [dialOpen, setDialOpen] = useState(false)
+  const [viewingNoteId, setViewingNoteId] = useState<string | null>(null)
   const [editingNote, setEditingNote] = useState<Note | null>(null)
   const [noteFormLoading, setNoteFormLoading] = useState(false)
 
@@ -203,6 +205,9 @@ export default function DashboardPage() {
       emptyMessage: 'Belum ada catatan tanpa pengingat.',
     },
   ]
+  const viewingNote = viewingNoteId
+    ? notes.find((note) => note.id === viewingNoteId) ?? null
+    : null
   const totalNotes = notes.length
   const doneNotes = notes.filter((n) => n.isDone).length
 
@@ -431,14 +436,12 @@ export default function DashboardPage() {
                         {row.notes.map((note) => (
                           <div
                             key={note.id}
-                            className="w-[76vw] max-w-[280px] flex-none snap-start self-stretch sm:w-[260px]"
+                            className="h-[168px] w-[62vw] max-w-[230px] flex-none snap-start self-stretch sm:h-[210px] sm:w-[250px]"
                           >
                             <NoteCard
                               note={note}
-                              onToggleDone={toggleDone}
-                              onEdit={setEditingNote}
+                              onOpen={(selectedNote) => setViewingNoteId(selectedNote.id)}
                               onDelete={deleteNote}
-                              onToggleItem={handleToggleItem}
                             />
                           </div>
                         ))}
@@ -457,6 +460,21 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Speed-dial FAB (mobile only) ── */}
+      <Modal open={!!viewingNote} onClose={() => setViewingNoteId(null)} className="p-0">
+        {viewingNote && (
+          <NoteDetail
+            note={viewingNote}
+            onClose={() => setViewingNoteId(null)}
+            onEdit={(note) => {
+              setViewingNoteId(null)
+              setEditingNote(note)
+            }}
+            onToggleDone={toggleDone}
+            onToggleItem={handleToggleItem}
+          />
+        )}
+      </Modal>
+
       {dialOpen && (
         <div className="lg:hidden fixed inset-0 z-20" onClick={() => setDialOpen(false)} />
       )}
