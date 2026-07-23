@@ -422,25 +422,39 @@ export function NoteForm({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <label className="text-xs font-medium text-text-secondary">
-          Tanggal
-          <input
-            type="date"
-            value={date}
-            onChange={(event) => setDate(event.target.value)}
-            className="mt-1.5 w-full rounded-input border border-border bg-white px-3 py-2.5 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary"
-          />
-        </label>
-        <label className="text-xs font-medium text-text-secondary">
-          Jam
-          <input
-            type="time"
-            value={time}
-            onChange={(event) => setTime(event.target.value)}
-            className="mt-1.5 w-full rounded-input border border-border bg-white px-3 py-2.5 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary"
-          />
-        </label>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-light">
+            <LordIcon src={ICONS.bell} colors={COLOR_PRIMARY} size={17} />
+          </span>
+          <div>
+            <p className="text-sm font-bold text-text-primary">Pengingat</p>
+            <p className="text-[11px] text-text-secondary">
+              Atur tanggal dan jam agar catatan muncul sebagai pengingat.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-xs font-medium text-text-secondary">
+            Tanggal
+            <input
+              type="date"
+              value={date}
+              onChange={(event) => setDate(event.target.value)}
+              className="mt-1.5 w-full rounded-input border border-border bg-white px-3 py-2.5 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary"
+            />
+          </label>
+          <label className="text-xs font-medium text-text-secondary">
+            Jam
+            <input
+              type="time"
+              value={time}
+              onChange={(event) => setTime(event.target.value)}
+              className="mt-1.5 w-full rounded-input border border-border bg-white px-3 py-2.5 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary"
+            />
+          </label>
+        </div>
       </div>
 
       <div>
