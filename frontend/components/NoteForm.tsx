@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, KeyboardEvent, useRef, useState } from 'react'
+import { FormEvent, KeyboardEvent, useLayoutEffect, useRef, useState } from 'react'
 import { Category, FinanceEntry, NoteType, TodoItem } from '../types'
 import { Button } from './ui/Button'
 import { CategoryChip } from './ui/CategoryChip'
@@ -66,6 +66,12 @@ function rupiah(value: number) {
   }).format(value)
 }
 
+function resizeTodoTextarea(element: HTMLTextAreaElement | null) {
+  if (!element) return
+  element.style.height = 'auto'
+  element.style.height = `${element.scrollHeight}px`
+}
+
 export function NoteForm({
   categories = [],
   noteType,
@@ -101,7 +107,11 @@ export function NoteForm({
   const [newCatColor, setNewCatColor] = useState('#9CA3AF')
   const [newCatLoading, setNewCatLoading] = useState(false)
   const [localCats, setLocalCats] = useState<{ id: string; name: string; color: string }[]>([])
-  const todoRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const todoRefs = useRef<Record<string, HTMLTextAreaElement | null>>({})
+
+  useLayoutEffect(() => {
+    Object.values(todoRefs.current).forEach(resizeTodoTextarea)
+  }, [todoItems])
 
   const allCategories = [
     ...PRESET_CATEGORIES,
@@ -136,11 +146,11 @@ export function NoteForm({
   }
 
   const handleTodoKey = (
-    event: KeyboardEvent<HTMLInputElement>,
+    event: KeyboardEvent<HTMLTextAreaElement>,
     item: TodoItem,
     index: number,
   ) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       addTodoAfter(index)
     } else if (event.key === 'Backspace' && !item.text && todoItems.length > 1) {
@@ -253,7 +263,7 @@ export function NoteForm({
           </div>
           <div className="divide-y divide-border rounded-input border border-border bg-white px-3">
             {todoItems.map((item, index) => (
-              <div key={item.id} className="flex min-h-12 items-center gap-3">
+              <div key={item.id} className="flex min-h-12 items-start gap-3 py-2">
                 <button
                   type="button"
                   onClick={() =>
@@ -263,28 +273,31 @@ export function NoteForm({
                       ),
                     )
                   }
-                  className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border ${
+                  className={`mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border ${
                     item.done ? 'border-primary bg-primary' : 'border-gray-300'
                   }`}
                   aria-label={item.done ? 'Tandai belum selesai' : 'Tandai selesai'}
                 >
                   {item.done && <LordIcon src={ICONS.check} colors={COLOR_WHITE} size={15} />}
                 </button>
-                <input
+                <textarea
                   ref={(element) => {
                     todoRefs.current[item.id] = element
+                    resizeTodoTextarea(element)
                   }}
+                  rows={1}
                   value={item.text}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    resizeTodoTextarea(event.currentTarget)
                     setTodoItems((current) =>
                       current.map((entry) =>
                         entry.id === item.id ? { ...entry, text: event.target.value } : entry,
                       ),
                     )
-                  }
+                  }}
                   onKeyDown={(event) => handleTodoKey(event, item, index)}
                   placeholder={index === 0 ? 'Ketik item, lalu tekan Enter' : 'Item berikutnya'}
-                  className={`min-w-0 flex-1 bg-transparent py-3 text-sm outline-none ${
+                  className={`min-h-8 min-w-0 flex-1 resize-none overflow-hidden bg-transparent py-1.5 text-sm leading-5 outline-none ${
                     item.done ? 'text-text-secondary line-through' : 'text-text-primary'
                   }`}
                 />
@@ -294,7 +307,7 @@ export function NoteForm({
                     onClick={() =>
                       setTodoItems((current) => current.filter((entry) => entry.id !== item.id))
                     }
-                    className="flex h-8 w-8 items-center justify-center text-text-secondary"
+                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center text-text-secondary"
                     aria-label="Hapus item"
                   >
                     <LordIcon src={ICONS.close} size={16} />
