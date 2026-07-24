@@ -1,144 +1,138 @@
 # inget.in
 
-Aplikasi pencatatan cepat berbasis waktu dan kategori. Catat rencanamu dengan simpel, cepat, dan terorganisir.
+Aplikasi pencatatan cepat berbasis waktu dan kategori. Mendukung catatan teks,
+to-do list, dan catatan keuangan dengan pengalaman mobile-first.
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|------------|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
-| Backend | NestJS, TypeScript |
+| --- | --- |
+| App | Next.js 14 App Router, React, TypeScript |
+| UI | Tailwind CSS, Lordicon |
+| API | Next.js Route Handlers |
 | Database | PostgreSQL via Supabase |
-| ORM | Prisma |
-| Auth | Supabase Auth / JWT (Email + Google OAuth) |
-| Deploy | Frontend → Vercel, Backend → Railway |
+| Database client | postgres.js |
+| Auth | Automatic guest session + JWT account sync |
+| Deployment | Vercel |
 
 ## Project Structure
 
-```
+```text
 inget.in/
-├── frontend/     # Next.js 14 App
-└── backend/      # NestJS API
+|-- frontend/
+|   |-- app/             # Pages and API route handlers
+|   |-- components/      # UI and note components
+|   |-- hooks/           # Auth and notes state
+|   |-- lib/             # API, database, auth, and utilities
+|   `-- types/           # Shared TypeScript types
+`-- README.md
 ```
 
-## Setup
+## Local Setup
 
-### Prerequisites
+Requirements:
+
 - Node.js 18+
-- npm or yarn
-- Supabase project (for database + auth)
-
-### Backend
-
-```bash
-cd backend
-npm install
-
-# Copy env and fill in values
-cp .env.example .env
-
-# Generate Prisma client
-npm run prisma:generate
-
-# Run migrations
-npm run prisma:migrate
-
-# Start dev server (port 3001)
-npm run start:dev
-```
-
-### Frontend
+- npm
+- Supabase PostgreSQL database
 
 ```bash
 cd frontend
 npm install
-
-# Copy env and fill in values
 cp .env.example .env.local
-
-# Start dev server (port 3000)
 npm run dev
 ```
 
+Open `http://localhost:3000`.
+
 ## Environment Variables
 
-### Backend (`backend/.env`)
-```
+Configure these values in `frontend/.env.local` and Vercel:
+
+```env
 DATABASE_URL=postgresql://...
 JWT_SECRET=...
 JWT_EXPIRES_IN=1h
 JWT_REFRESH_SECRET=...
-JWT_REFRESH_EXPIRES_IN=7d
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_KEY=...
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-CLIENT_URL=http://localhost:3000
-PORT=3001
-```
+JWT_REFRESH_EXPIRES_IN=30d
+JWT_GUEST_REFRESH_EXPIRES_IN=365d
 
-### Frontend (`frontend/.env.local`)
-```
-NEXT_PUBLIC_API_URL=http://localhost:3001
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_API_URL=/api
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 ```
 
-## API Documentation
+`DATABASE_URL`, `JWT_SECRET`, and `JWT_REFRESH_SECRET` are server-only values.
+Never expose them through variables prefixed with `NEXT_PUBLIC_`.
+
+## Authentication Flow
+
+1. User opens the landing page and enters the dashboard without logging in.
+2. The dashboard creates a guest user and JWT session automatically.
+3. Guest notes, categories, to-do items, and finance records are stored in PostgreSQL.
+4. Registering upgrades the same guest user, so its existing data keeps the same owner ID.
+5. Logging in to an existing account transfers guest notes and categories to that account.
+6. After login, the account can open the same notes from another device.
+
+Guest sessions are tied to the current browser. Clearing browser storage removes the
+local session reference, so account sync is recommended for cross-device access and recovery.
+
+## API
+
+All endpoints use the `/api` prefix.
 
 ### Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /auth/register | Register with email/password |
-| POST | /auth/login | Login with email/password |
-| POST | /auth/google | Login/Register with Google |
-| POST | /auth/refresh | Refresh access token |
-| DELETE | /auth/logout | Logout |
 
-### Notes (JWT required)
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /notes | Get all notes (`?category=&date=&done=`) |
-| POST | /notes | Create note |
-| GET | /notes/:id | Get note detail |
-| PUT | /notes/:id | Update note |
-| DELETE | /notes/:id | Delete note |
-| PATCH | /notes/:id/done | Toggle done status |
+| --- | --- | --- |
+| POST | `/api/auth/guest` | Create an automatic guest session |
+| POST | `/api/auth/register` | Upgrade guest or create an account |
+| POST | `/api/auth/login` | Login and merge current guest data |
+| POST | `/api/auth/google` | Login/register with Google profile data |
+| POST | `/api/auth/refresh` | Refresh access and refresh tokens |
+| DELETE | `/api/auth/logout` | End the current account session |
 
-### Categories (JWT required)
+### Notes
+
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /categories | Get all categories |
-| POST | /categories | Create category |
-| PUT | /categories/:id | Update category |
-| DELETE | /categories/:id | Delete category |
+| --- | --- | --- |
+| GET | `/api/notes` | List notes with optional filters |
+| POST | `/api/notes` | Create a note |
+| GET | `/api/notes/:id` | Get note detail |
+| PUT | `/api/notes/:id` | Update a note |
+| DELETE | `/api/notes/:id` | Delete a note |
+| PATCH | `/api/notes/:id/done` | Toggle note completion |
 
-## Response Format
+### Categories
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| GET | `/api/categories` | List user categories |
+| POST | `/api/categories` | Create a category |
+| PUT | `/api/categories/:id` | Update a category |
+| DELETE | `/api/categories/:id` | Delete a category |
+
+Responses use:
 
 ```json
-// Success
-{ "status": "success", "data": { ... } }
+{ "status": "success", "data": {} }
+```
 
-// Error
+```json
 { "status": "error", "message": "..." }
+```
+
+## Verification
+
+```bash
+cd frontend
+npx tsc --noEmit --incremental false
+npm run build
 ```
 
 ## Deploy
 
-### Frontend (Vercel)
-1. Push to GitHub
-2. Connect repo to Vercel
-3. Set environment variables
-4. Deploy
-
-### Backend (Railway)
-1. Connect GitHub repo to Railway
-2. Set root directory to `backend/`
-3. Set environment variables
-4. Deploy
-
-## App Flow
-
-1. **Guest** → writes note → clicks Simpan → SaveModal appears → login/register
-2. After login → note from localStorage is auto-saved to DB
-3. **Logged in** → full dashboard with category filters, note cards, FAB button
+1. Connect the repository to Vercel.
+2. Set the root directory to `frontend`.
+3. Configure all environment variables.
+4. Deploy the production build.

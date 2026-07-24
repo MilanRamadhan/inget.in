@@ -23,7 +23,7 @@ const FEATURES = [
     colors: 'primary:#10B981,secondary:#059669',
     bg: '#F0FDF4',
     title: 'Tersimpan Aman',
-    desc: 'Login untuk menyimpan catatan secara permanen di semua perangkat.',
+    desc: 'Langsung tersimpan. Hubungkan akun hanya saat kamu ingin pindah perangkat.',
   },
 ]
 
@@ -35,10 +35,10 @@ export default function LandingPage() {
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <Logo />
           <Link
-            href="/login"
+            href="/dashboard"
             className="text-sm font-semibold text-primary hover:text-primary-hover transition-colors"
           >
-            Login
+            Buka catatan
           </Link>
         </div>
       </nav>
@@ -62,8 +62,8 @@ export default function LandingPage() {
         </h1>
 
         <p className="text-text-secondary text-sm leading-relaxed mb-8 max-w-xs">
-          Catat rencanamu berdasarkan waktu dan kategori. Simpel, cepat, dan selalu siap
-          kapanpun kamu butuh.
+          Catat langsung tanpa login. Akun hanya diperlukan saat kamu ingin membuka
+          catatan yang sama di perangkat lain.
         </p>
 
         <Link

@@ -11,7 +11,7 @@ import { Logo } from '../../components/Logo'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login } = useAuth()
+  const { login, loading: authLoading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -20,6 +20,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    if (authLoading) return
     setLoading(true)
     setError('')
     try {
@@ -59,7 +60,7 @@ export default function LoginPage() {
               <span className="material-icons text-2xl text-primary">waving_hand</span>
             </h1>
             <p className="text-sm text-text-secondary mt-1">
-              Masuk untuk akses catatan kamu
+              Sinkronkan catatanmu dan buka dari perangkat lain
             </p>
           </div>
 
@@ -104,7 +105,7 @@ export default function LoginPage() {
               />
             </div>
 
-            <Button type="submit" loading={loading} className="w-full" size="lg">
+            <Button type="submit" loading={loading || authLoading} className="w-full" size="lg">
               Login
             </Button>
           </form>
@@ -149,6 +150,12 @@ export default function LoginPage() {
               Daftar gratis →
             </Link>
           </p>
+          <Link
+            href="/dashboard"
+            className="mt-4 block text-center text-xs font-medium text-text-secondary hover:text-primary"
+          >
+            Kembali ke catatan tanpa login
+          </Link>
         </div>
       </main>
     </div>

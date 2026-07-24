@@ -11,22 +11,19 @@ import { NoteDetail } from '../../components/NoteDetail'
 import { CategoryManager } from '../../components/CategoryManager'
 import { NoteForm } from '../../components/NoteForm'
 import { CategoryFilter } from '../../components/CategoryFilter'
-import { SaveModal } from '../../components/SaveModal'
 import { Modal } from '../../components/ui/Modal'
-import { savePendingNote } from '../../lib/utils'
 import { LordIcon } from '../../components/LordIcon'
 import { Logo } from '../../components/Logo'
 import { ICONS, COLOR_PRIMARY, COLOR_WHITE, COLOR_MUTED } from '../../lib/icons'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { user, loading: authLoading, logout } = useAuth()
+  const { user, loading: authLoading, error: authError, isGuest, logout, retry } = useAuth()
   const { notes, loading: notesLoading, fetchNotes, createNote, updateNote, deleteNote, toggleDone } =
     useNotes()
 
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [showSaveModal, setShowSaveModal] = useState(false)
   const [showNewNote, setShowNewNote] = useState(false)
   const [newNoteType, setNewNoteType] = useState<NoteType>('text')
   const [dialOpen, setDialOpen] = useState(false)
@@ -71,10 +68,6 @@ export default function DashboardPage() {
     },
     [user, fetchNotes],
   )
-
-  const handleGuestSave = async (data: any) => {
-    savePendingNote({ title: data.title, note: data.note, scheduledAt: data.scheduledAt })
-  }
 
   const handleCreateNote = async (data: any) => {
     setNoteFormLoading(true)
@@ -129,9 +122,9 @@ export default function DashboardPage() {
     await fetchNotes(nextCategory !== 'all' ? { category: nextCategory } : undefined)
   }
 
-  const handleLogout = () => {
-    logout()
-    router.push('/')
+  const handleLogout = async () => {
+    await logout()
+    router.push('/dashboard')
   }
 
   if (authLoading) {
@@ -147,47 +140,23 @@ export default function DashboardPage() {
   ───────────────────────────────────────────── */
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-border">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-            <Logo />
-            <div className="flex items-center gap-2">
-              <LordIcon src={ICONS.cloudOff} colors={COLOR_MUTED} size={19} />
-              <button
-                onClick={() => router.push('/login')}
-                className="text-sm font-semibold text-primary hover:text-[#EA6C0A] transition-colors"
-              >
-                Login / Daftar
-              </button>
-            </div>
-          </div>
-        </nav>
-
-        <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6">
-          <div className="bg-primary-light border border-orange-200 rounded-card p-3 mb-6 flex items-start gap-2">
-            <LordIcon src={ICONS.info} colors={COLOR_PRIMARY} size={18} className="mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-primary leading-relaxed">
-              Login untuk menyimpan catatanmu secara permanen dan akses di perangkat lain.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-card border border-border shadow-sm p-5">
-            <NoteForm
-              isGuest
-              onSubmit={handleGuestSave}
-              onSaveClick={() => setShowSaveModal(true)}
-            />
-          </div>
-        </main>
-
-        <SaveModal
-          open={showSaveModal}
-          onClose={() => setShowSaveModal(false)}
-          onContinueWithout={() => setShowSaveModal(false)}
-        />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
+        <LordIcon src={ICONS.cloudOff} colors={COLOR_MUTED} size={48} />
+        <h1 className="mt-4 text-lg font-bold text-text-primary">Penyimpanan belum siap</h1>
+        <p className="mt-1 max-w-xs text-sm text-text-secondary">
+          {authError || 'Gagal menyiapkan ruang catatanmu.'}
+        </p>
+        <button
+          onClick={() => void retry()}
+          className="mt-5 rounded-chip bg-primary px-5 py-2.5 text-sm font-semibold text-white"
+        >
+          Coba lagi
+        </button>
       </div>
     )
   }
+
+  const displayName = isGuest ? 'Pelupa' : user.name.split(' ')[0]
 
   /* ─────────────────────────────────────────────
      LOGGED-IN VIEW
@@ -239,30 +208,47 @@ export default function DashboardPage() {
       <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-border">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Logo />
-          <div className="flex items-center gap-3">
-            {user.avatar ? (
-              <Image
-                src={user.avatar}
-                alt={user.name}
-                width={32}
-                height={32}
-                className="rounded-full border-2 border-primary/20"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <span className="hidden sm:block text-sm font-medium text-text-primary">
-              {user.name.split(' ')[0]}
-            </span>
+          <div className="flex items-center gap-2">
             <button
-              onClick={handleLogout}
-              className="flex items-center gap-1 text-sm text-text-secondary hover:text-danger transition-colors"
+              onClick={() => {
+                if (isGuest) router.push('/login')
+              }}
+              className={`flex items-center gap-2 rounded-chip p-1 transition-colors ${
+                isGuest ? 'hover:bg-primary-light' : ''
+              }`}
+              aria-label={isGuest ? 'Masuk untuk sinkronisasi' : `Profil ${user.name}`}
             >
-              <LordIcon src={ICONS.logout} trigger="hover" colors={COLOR_MUTED} size={22} />
-              <span className="hidden sm:inline">Keluar</span>
+              {user.avatar ? (
+                <Image
+                  src={user.avatar}
+                  alt={user.name}
+                  width={32}
+                  height={32}
+                  className="rounded-full border-2 border-primary/20"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              {isGuest && (
+                <span className="hidden sm:block text-xs font-semibold text-primary">
+                  Sinkronkan
+                </span>
+              )}
             </button>
+            <span className="hidden sm:block text-sm font-medium text-text-primary">
+              {!isGuest && displayName}
+            </span>
+            {!isGuest && (
+              <button
+                onClick={() => void handleLogout()}
+                className="flex items-center gap-1 text-sm text-text-secondary hover:text-danger transition-colors"
+              >
+                <LordIcon src={ICONS.logout} trigger="hover" colors={COLOR_MUTED} size={22} />
+                <span className="hidden sm:inline">Keluar</span>
+              </button>
+            )}
           </div>
         </div>
       </nav>
@@ -280,15 +266,25 @@ export default function DashboardPage() {
                   <Image src={user.avatar} alt={user.name} width={40} height={40} className="rounded-full" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                    {user.name.charAt(0).toUpperCase()}
+                    {displayName.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm text-text-primary truncate">{user.name.split(' ')[0]}</p>
-                  <p className="text-xs text-text-secondary truncate">{user.email}</p>
+                  <p className="font-semibold text-sm text-text-primary truncate">{displayName}</p>
+                  <p className="text-xs text-text-secondary truncate">
+                    {isGuest ? 'Belum disinkronkan' : user.email}
+                  </p>
                 </div>
               </div>
               <p className="text-xs text-text-secondary">{todayFull}</p>
+              {isGuest && (
+                <button
+                  onClick={() => router.push('/login')}
+                  className="mt-3 w-full rounded-chip border border-primary/30 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary-light"
+                >
+                  Sinkronkan catatan
+                </button>
+              )}
               {/* Mini stats */}
               <div className="mt-3 flex gap-3">
                 <div className="flex-1 bg-background rounded-xl p-2.5 text-center">
@@ -362,7 +358,7 @@ export default function DashboardPage() {
             <div className="lg:hidden mb-5">
               <p className="text-xs text-text-secondary">{todayFull}</p>
               <h1 className="text-xl font-bold text-text-primary mt-1">
-                Hei, {user.name.split(' ')[0]}
+                Hei, {displayName}
                 <span className="ml-1.5 inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10">
                   <LordIcon src={ICONS.wave} colors={COLOR_PRIMARY} size={14} />
                 </span>
@@ -374,7 +370,7 @@ export default function DashboardPage() {
             <div className="hidden lg:flex items-center justify-between mb-5">
               <div>
                 <h1 className="text-xl font-bold text-text-primary">
-                  Hei, {user.name.split(' ')[0]}
+                  Hei, {displayName}
                   <span className="ml-1.5 inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 align-middle">
                     <LordIcon src={ICONS.wave} colors={COLOR_PRIMARY} size={14} />
                   </span>

@@ -30,7 +30,7 @@ function PasswordStrength({ password }: { password: string }) {
 
 export default function RegisterPage() {
   const router = useRouter()
-  const { register } = useAuth()
+  const { register, loading: authLoading } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -42,6 +42,7 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    if (authLoading) return
     if (password !== confirmPassword) {
       setError('Password tidak cocok')
       return
@@ -82,7 +83,7 @@ export default function RegisterPage() {
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-text-primary">Buat akun inget.in</h1>
             <p className="text-sm text-text-secondary mt-1">
-              Mulai catat dengan mudah dan rapi
+              Catatan yang sudah kamu buat tetap aman setelah akun dihubungkan
             </p>
           </div>
 
@@ -155,7 +156,7 @@ export default function RegisterPage() {
               }
             />
 
-            <Button type="submit" loading={loading} className="w-full" size="lg">
+            <Button type="submit" loading={loading || authLoading} className="w-full" size="lg">
               Buat Akun
               <span className="material-icons text-base leading-none">arrow_forward</span>
             </Button>
@@ -189,6 +190,12 @@ export default function RegisterPage() {
               Login →
             </Link>
           </p>
+          <Link
+            href="/dashboard"
+            className="mt-4 block text-center text-xs font-medium text-text-secondary hover:text-primary"
+          >
+            Kembali ke catatan tanpa daftar
+          </Link>
         </div>
       </main>
     </div>

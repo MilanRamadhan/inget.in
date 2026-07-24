@@ -40,6 +40,12 @@ export async function findUserByEmail(email: string): Promise<any | null> {
   return rows[0] || null
 }
 
+export async function findUserById(id: string): Promise<any | null> {
+  const sql = getSql()
+  const rows = await sql`SELECT * FROM ingetin."User" WHERE id = ${id} LIMIT 1`
+  return rows[0] || null
+}
+
 export async function createUser(u: {
   name: string
   email: string
@@ -53,6 +59,39 @@ export async function createUser(u: {
     VALUES (${crypto.randomUUID()}, ${u.name}, ${u.email}, ${u.password ?? null}, ${u.avatar ?? null}, ${now}, ${now})
     RETURNING *`
   return rows[0]
+}
+
+export async function upgradeGuestUser(
+  id: string,
+  u: { name: string; email: string; password: string; avatar?: string | null },
+): Promise<any | null> {
+  const sql = getSql()
+  const rows = await sql`
+    UPDATE ingetin."User"
+    SET name = ${u.name},
+        email = ${u.email},
+        password = ${u.password},
+        avatar = ${u.avatar ?? null},
+        "updatedAt" = ${new Date().toISOString()}
+    WHERE id = ${id} AND email LIKE ${'%@guest.inget.in'}
+    RETURNING *`
+  return rows[0] || null
+}
+
+export async function mergeGuestData(guestUserId: string, targetUserId: string): Promise<void> {
+  if (guestUserId === targetUserId) return
+  const sql = getSql()
+  const now = new Date().toISOString()
+  await sql.begin(async (transaction) => {
+    await transaction`
+      UPDATE ingetin."Category"
+      SET "userId" = ${targetUserId}, "updatedAt" = ${now}
+      WHERE "userId" = ${guestUserId}`
+    await transaction`
+      UPDATE ingetin."Note"
+      SET "userId" = ${targetUserId}, "updatedAt" = ${now}
+      WHERE "userId" = ${guestUserId}`
+  })
 }
 
 /* ───────────── Notes (with embedded category) ───────────── */

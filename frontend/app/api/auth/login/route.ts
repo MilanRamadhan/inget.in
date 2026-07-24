@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { findUserByEmail } from '@/lib/db'
-import { signTokens } from '@/lib/serverAuth'
+import { findUserByEmail, findUserById, mergeGuestData } from '@/lib/db'
+import { getAuth, isGuestEmail, signTokens } from '@/lib/serverAuth'
 import { ok, fail } from '@/lib/apiResponse'
 
 export const runtime = 'nodejs'
@@ -18,9 +18,23 @@ export async function POST(req: NextRequest) {
     const valid = await bcrypt.compare(password, user.password)
     if (!valid) return fail('Invalid credentials', 401)
 
+    const currentAuth = getAuth(req)
+    if (currentAuth?.isGuest && currentAuth.id !== user.id) {
+      const guest = await findUserById(currentAuth.id)
+      if (guest && isGuestEmail(guest.email)) {
+        await mergeGuestData(guest.id, user.id)
+      }
+    }
+
     const tokens = signTokens(user.id, user.email)
     return ok({
-      user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar },
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        isGuest: false,
+      },
       ...tokens,
     })
   } catch (e: any) {
