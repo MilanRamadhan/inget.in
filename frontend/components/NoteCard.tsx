@@ -63,7 +63,7 @@ export function NoteCard({
 
   return (
     <article
-      className="note-card relative flex w-full cursor-pointer flex-col rounded-card p-3 transition-transform active:scale-[0.98] sm:p-4"
+      className="note-card relative flex h-full w-full cursor-pointer flex-col rounded-card p-3 transition-transform active:scale-[0.98] sm:p-4"
       style={{ backgroundColor: background }}
       onClick={() => onOpen(note)}
     >
@@ -193,7 +193,7 @@ export function NoteCard({
         </p>
       )}
 
-      <footer className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-black/5 pt-2">
+      <footer className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-black/5 pt-2">
         {(date || time) && (
           <span className="text-[10px] text-text-secondary">
             {date}{time ? ` · ${time}` : ''}

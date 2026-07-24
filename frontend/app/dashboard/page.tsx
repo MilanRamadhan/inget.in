@@ -208,9 +208,7 @@ export default function DashboardPage() {
       description: 'Ringkasan catatan keuangan',
       icon: ICONS.wallet,
       notes: financeNotes,
-      emptyMessage: 'Belum ada catatan keuangan.',
-      cardClassName:
-        'w-[72vw] max-w-[280px] md:w-[290px]',
+      cardClassName: 'w-[72vw] max-w-[280px] md:w-[290px]',
     },
     {
       id: 'reminders',
@@ -218,9 +216,7 @@ export default function DashboardPage() {
       description: 'Urut berdasarkan jadwal terdekat',
       icon: ICONS.bell,
       notes: reminderNotes,
-      emptyMessage: 'Belum ada catatan dengan pengingat.',
-      cardClassName:
-        'w-[62vw] max-w-[230px] md:w-[245px]',
+      cardClassName: 'w-[72vw] max-w-[280px] md:w-[290px]',
     },
     {
       id: 'recent',
@@ -228,11 +224,9 @@ export default function DashboardPage() {
       description: 'Terakhir dibuat atau diedit',
       icon: ICONS.note,
       notes: recentNotes,
-      emptyMessage: 'Belum ada catatan tanpa pengingat.',
-      cardClassName:
-        'w-[68vw] max-w-[260px] md:w-[270px]',
+      cardClassName: 'w-[72vw] max-w-[280px] md:w-[290px]',
     },
-  ]
+  ].filter((row) => row.notes.length > 0)
   const viewingNote = viewingNoteId
     ? notes.find((note) => note.id === viewingNoteId) ?? null
     : null
@@ -461,26 +455,20 @@ export default function DashboardPage() {
                       </span>
                     </div>
 
-                    {row.notes.length > 0 ? (
-                      <div className="-mx-4 flex snap-x snap-mandatory items-start gap-3 overflow-x-auto px-4 pb-3 scrollbar-hide sm:mx-0 sm:px-0">
-                        {row.notes.map((note) => (
-                          <div
-                            key={note.id}
-                            className={`${row.cardClassName} flex-none snap-start`}
-                          >
-                            <NoteCard
-                              note={note}
-                              onOpen={(selectedNote) => setViewingNoteId(selectedNote.id)}
-                              onDelete={deleteNote}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-card border border-dashed border-border px-4 py-5 text-sm text-text-secondary">
-                        {row.emptyMessage}
-                      </div>
-                    )}
+                    <div className="-mx-4 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-4 pb-3 scrollbar-hide sm:mx-0 sm:px-0">
+                      {row.notes.map((note) => (
+                        <div
+                          key={note.id}
+                          className={`${row.cardClassName} flex-none snap-start self-stretch`}
+                        >
+                          <NoteCard
+                            note={note}
+                            onOpen={(selectedNote) => setViewingNoteId(selectedNote.id)}
+                            onDelete={deleteNote}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </section>
                 ))}
               </div>
