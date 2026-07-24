@@ -56,6 +56,10 @@ JWT_EXPIRES_IN=1h
 JWT_REFRESH_SECRET=...
 JWT_REFRESH_EXPIRES_IN=30d
 JWT_GUEST_REFRESH_EXPIRES_IN=365d
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:admin@example.com
+CRON_SECRET=...
 
 NEXT_PUBLIC_API_URL=/api
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
@@ -77,6 +81,29 @@ Never expose them through variables prefixed with `NEXT_PUBLIC_`.
 Guest sessions are tied to the current browser. Clearing browser storage removes the
 local session reference, so account sync is recommended for cross-device access and recovery.
 
+## Push Notification Setup
+
+Generate one VAPID key pair and keep using the same pair in every deployment:
+
+```bash
+cd frontend
+npx web-push generate-vapid-keys
+```
+
+Set the generated public key as `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, the private key as
+`VAPID_PRIVATE_KEY`, and use a valid contact URL or email for `VAPID_SUBJECT`.
+
+Then:
+
+1. Run `supabase/migrations/202607240001_push_notifications.sql` in Supabase SQL Editor.
+2. Create a strong random `CRON_SECRET` and configure the same value in Vercel.
+3. Open `supabase/setup-reminder-cron.sql`.
+4. Replace `YOUR_VERCEL_DOMAIN` and `YOUR_CRON_SECRET`.
+5. Run the cron SQL in Supabase SQL Editor.
+
+Supabase calls `/api/notifications/dispatch` every minute. Each reminder is claimed
+per note and device before delivery, preventing duplicate notifications.
+
 ## API
 
 All endpoints use the `/api` prefix.
@@ -91,6 +118,14 @@ All endpoints use the `/api` prefix.
 | POST | `/api/auth/google` | Login/register with Google profile data |
 | POST | `/api/auth/refresh` | Refresh access and refresh tokens |
 | DELETE | `/api/auth/logout` | End the current account session |
+
+### Notifications
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| POST | `/api/notifications/subscription` | Register or update a device |
+| DELETE | `/api/notifications/subscription` | Disable notifications on a device |
+| POST | `/api/notifications/dispatch` | Send due reminders; requires `CRON_SECRET` |
 
 ### Notes
 

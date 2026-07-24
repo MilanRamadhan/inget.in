@@ -5,6 +5,12 @@ export const metadata: Metadata = {
   title: 'inget.in — Catatan Cepat Berbasis Waktu',
   description: 'Catat rencanamu berdasarkan waktu dan kategori. Simpel, cepat, dan selalu siap kapanpun kamu butuh.',
   icons: { icon: '/logo.png', apple: '/logo.png' },
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'inget.in',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

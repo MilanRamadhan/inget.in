@@ -150,3 +150,13 @@ export const categoriesApi = {
     api.put(`/categories/${id}`, data),
   delete: (id: string) => api.delete(`/categories/${id}`),
 }
+
+export const notificationsApi = {
+  subscribe: (data: {
+    endpoint: string
+    keys: { p256dh: string; auth: string }
+    timezone: string
+  }) => api.post('/notifications/subscription', data),
+  unsubscribe: (endpoint: string) =>
+    api.delete('/notifications/subscription', { data: { endpoint } }),
+}

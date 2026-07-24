@@ -443,7 +443,7 @@ export function NoteForm({
           <div>
             <p className="text-sm font-bold text-text-primary">Pengingat</p>
             <p className="text-[11px] text-text-secondary">
-              Atur tanggal dan jam agar catatan muncul sebagai pengingat.
+              Atur tanggal dan jam untuk pengingat serta notifikasi perangkat.
             </p>
           </div>
         </div>

@@ -9,6 +9,7 @@ import { Category, Note, NoteType, TodoItem } from '../../types'
 import { NoteCard } from '../../components/NoteCard'
 import { NoteDetail } from '../../components/NoteDetail'
 import { CategoryManager } from '../../components/CategoryManager'
+import { NotificationControl } from '../../components/NotificationControl'
 import { NoteForm } from '../../components/NoteForm'
 import { CategoryFilter } from '../../components/CategoryFilter'
 import { Modal } from '../../components/ui/Modal'
@@ -51,6 +52,15 @@ export default function DashboardPage() {
       loadCategories()
     }
   }, [authLoading, user, fetchNotes])
+
+  useEffect(() => {
+    if (!notes.length) return
+    const noteId = new URLSearchParams(window.location.search).get('note')
+    if (noteId && notes.some((note) => note.id === noteId)) {
+      setViewingNoteId(noteId)
+      window.history.replaceState({}, '', '/dashboard')
+    }
+  }, [notes])
 
   const loadCategories = async () => {
     try {
@@ -390,6 +400,10 @@ export default function DashboardPage() {
             </div>
 
             {/* ── Notes ── */}
+            <div className="mb-5">
+              <NotificationControl userId={user.id} />
+            </div>
+
             {notesLoading ? (
               <div className="flex justify-center py-16">
                 <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
