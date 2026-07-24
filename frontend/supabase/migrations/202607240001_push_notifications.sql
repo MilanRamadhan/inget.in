@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS ingetin."PushSubscription" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "userId" UUID NOT NULL REFERENCES ingetin."User"(id) ON DELETE CASCADE,
+  "userId" TEXT NOT NULL REFERENCES ingetin."User"(id) ON DELETE CASCADE,
   endpoint TEXT NOT NULL UNIQUE,
   p256dh TEXT NOT NULL,
   auth TEXT NOT NULL,
@@ -14,7 +14,7 @@ CREATE INDEX IF NOT EXISTS "PushSubscription_userId_idx"
 
 CREATE TABLE IF NOT EXISTS ingetin."ReminderDelivery" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "noteId" UUID NOT NULL REFERENCES ingetin."Note"(id) ON DELETE CASCADE,
+  "noteId" TEXT NOT NULL REFERENCES ingetin."Note"(id) ON DELETE CASCADE,
   "subscriptionId" UUID NOT NULL
     REFERENCES ingetin."PushSubscription"(id) ON DELETE CASCADE,
   "scheduledKey" VARCHAR(16) NOT NULL,
