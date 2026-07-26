@@ -17,6 +17,12 @@ type NotePayload = {
   items?: TodoItem[] | FinanceEntry[]
 }
 
+interface FinanceDay {
+  id: string
+  date: string
+  items: FinanceEntry[]
+}
+
 interface NoteFormProps {
   categories?: Category[]
   noteType?: NoteType
@@ -47,11 +53,38 @@ const PRESET_COLORS = [
 ]
 
 const makeTodo = (): TodoItem => ({ id: crypto.randomUUID(), text: '', done: false })
-const makeFinance = (kind: FinanceEntry['kind'] = 'expense'): FinanceEntry => ({
+const localDateValue = (date = new Date()) => {
+  const offset = date.getTimezoneOffset() * 60_000
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10)
+}
+
+const addDate = (value: string, days: number) => {
+  if (!value) return localDateValue()
+  const [year, month, day] = value.split('-').map(Number)
+  const result = new Date(year, month - 1, day)
+  result.setDate(result.getDate() + days)
+  return localDateValue(result)
+}
+
+const formatFinanceDay = (value: string) => {
+  if (!value) return 'Pilih tanggal'
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
+  })
+}
+
+const makeFinance = (
+  date: string,
+  kind: FinanceEntry['kind'] = 'expense',
+): FinanceEntry => ({
   id: crypto.randomUUID(),
   description: '',
   amount: 0,
   kind,
+  date,
 })
 
 function isFinanceEntry(item: TodoItem | FinanceEntry): item is FinanceEntry {
@@ -98,9 +131,34 @@ export function NoteForm({
         : []
     return current.length ? current : [makeTodo()]
   })
-  const [financeItems, setFinanceItems] = useState<FinanceEntry[]>(() => {
+  const [financeDays, setFinanceDays] = useState<FinanceDay[]>(() => {
     const current = mode === 'finance' ? initialItems.filter(isFinanceEntry) : []
-    return current.length ? current : [makeFinance()]
+    const fallbackDate = initialData?.scheduledAt?.split('T')[0] || localDateValue()
+    if (!current.length) {
+      return [
+        {
+          id: crypto.randomUUID(),
+          date: fallbackDate,
+          items: [makeFinance(fallbackDate)],
+        },
+      ]
+    }
+
+    const grouped = new Map<string, FinanceEntry[]>()
+    current.forEach((item) => {
+      const itemDate = item.date || fallbackDate
+      const entries = grouped.get(itemDate) || []
+      entries.push({ ...item, date: itemDate })
+      grouped.set(itemDate, entries)
+    })
+
+    return Array.from(grouped.entries())
+      .sort(([first], [second]) => first.localeCompare(second))
+      .map(([dayDate, items]) => ({
+        id: crypto.randomUUID(),
+        date: dayDate,
+        items,
+      }))
   })
   const [showNewCat, setShowNewCat] = useState(false)
   const [newCatName, setNewCatName] = useState('')
@@ -164,9 +222,8 @@ export function NoteForm({
     event.preventDefault()
     if (!title.trim()) return
 
-    const scheduledAt = date
-      ? `${date}T${time || '00:00'}:00.000Z`
-      : ''
+    const scheduledAt =
+      mode === 'finance' ? '' : date ? `${date}T${time || '00:00'}:00.000Z` : ''
     const categoryId = isGuest ? selectedCategory : await resolveCategoryId()
     const items =
       mode === 'todo'
@@ -174,9 +231,17 @@ export function NoteForm({
             .map((item) => ({ ...item, text: item.text.trim() }))
             .filter((item) => item.text)
         : mode === 'finance'
-          ? financeItems
-              .map((item) => ({ ...item, description: item.description.trim() }))
-              .filter((item) => item.description && item.amount > 0)
+          ? financeDays.flatMap((day) => {
+              const validItems = day.items
+                .map((item) => ({
+                  ...item,
+                  date: day.date,
+                  description: item.description.trim(),
+                }))
+                .filter((item) => item.description && item.amount > 0)
+
+              return validItems.length ? validItems : [makeFinance(day.date)]
+            })
           : undefined
 
     await onSubmit({
@@ -210,12 +275,47 @@ export function NoteForm({
     }
   }
 
+  const financeItems = financeDays.flatMap((day) => day.items)
   const income = financeItems
     .filter((item) => item.kind === 'income')
     .reduce((sum, item) => sum + item.amount, 0)
   const expense = financeItems
     .filter((item) => item.kind === 'expense')
     .reduce((sum, item) => sum + item.amount, 0)
+
+  const updateFinanceItem = (
+    dayId: string,
+    itemId: string,
+    changes: Partial<FinanceEntry>,
+  ) => {
+    setFinanceDays((current) =>
+      current.map((day) =>
+        day.id === dayId
+          ? {
+              ...day,
+              items: day.items.map((item) =>
+                item.id === itemId ? { ...item, ...changes, date: day.date } : item,
+              ),
+            }
+          : day,
+      ),
+    )
+  }
+
+  const addFinanceDay = () => {
+    setFinanceDays((current) => {
+      const latestDate = current[current.length - 1]?.date || localDateValue()
+      const nextDate = addDate(latestDate, 1)
+      return [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          date: nextDate,
+          items: [makeFinance(nextDate)],
+        },
+      ]
+    })
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
@@ -230,7 +330,7 @@ export function NoteForm({
             mode === 'todo'
               ? 'Contoh: Belanja bulanan'
               : mode === 'finance'
-                ? 'Contoh: Pengeluaran Juli'
+                ? 'Contoh: Keuangan minggu ini'
                 : 'Judul catatan'
           }
           className="w-full border-0 border-b border-border bg-transparent px-0 pb-3 text-xl font-bold text-text-primary outline-none placeholder:font-medium placeholder:text-gray-300 focus:border-primary"
@@ -344,131 +444,206 @@ export function NoteForm({
             </div>
           </div>
 
-          <div className="space-y-2">
-            {financeItems.map((item) => (
-              <div key={item.id} className="rounded-input border border-border bg-white p-3">
-                <div className="mb-2 flex gap-2">
-                  {(['expense', 'income'] as const).map((kind) => (
-                    <button
-                      key={kind}
-                      type="button"
-                      onClick={() =>
-                        setFinanceItems((current) =>
-                          current.map((entry) =>
-                            entry.id === item.id ? { ...entry, kind } : entry,
-                          ),
-                        )
-                      }
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        item.kind === kind
-                          ? kind === 'income'
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-red-100 text-red-600'
-                          : 'bg-gray-100 text-text-secondary'
-                      }`}
-                    >
-                      {kind === 'income' ? 'Pemasukan' : 'Pengeluaran'}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    value={item.description}
-                    onChange={(event) =>
-                      setFinanceItems((current) =>
-                        current.map((entry) =>
-                          entry.id === item.id
-                            ? { ...entry, description: event.target.value }
-                            : entry,
-                        ),
-                      )
-                    }
-                    placeholder="Keterangan"
-                    className="min-w-0 flex-1 border-b border-border py-2 text-sm outline-none focus:border-primary"
-                  />
-                  <div className="flex w-32 items-center border-b border-border focus-within:border-primary">
-                    <span className="text-xs text-text-secondary">Rp</span>
+          <div className="space-y-4">
+            {financeDays.map((day) => (
+              <section
+                key={day.id}
+                className="overflow-hidden rounded-card border border-border bg-white"
+              >
+                <div className="flex items-center gap-3 border-b border-border bg-gray-50 px-3 py-2.5">
+                  <LordIcon src={ICONS.calendar} colors={COLOR_PRIMARY} size={18} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-bold text-text-primary">
+                      {formatFinanceDay(day.date)}
+                    </p>
                     <input
-                      type="number"
-                      min="0"
-                      inputMode="numeric"
-                      value={item.amount || ''}
-                      onChange={(event) =>
-                        setFinanceItems((current) =>
+                      type="date"
+                      value={day.date}
+                      onChange={(event) => {
+                        const nextDate = event.target.value
+                        setFinanceDays((current) =>
                           current.map((entry) =>
-                            entry.id === item.id
-                              ? { ...entry, amount: Number(event.target.value) }
+                            entry.id === day.id
+                              ? {
+                                  ...entry,
+                                  date: nextDate,
+                                  items: entry.items.map((item) => ({
+                                    ...item,
+                                    date: nextDate,
+                                  })),
+                                }
                               : entry,
                           ),
                         )
-                      }
-                      placeholder="0"
-                      className="w-full py-2 text-right text-sm font-semibold outline-none"
+                      }}
+                      className="mt-0.5 max-w-full bg-transparent text-[11px] text-text-secondary outline-none"
+                      aria-label="Tanggal transaksi"
+                      required
                     />
                   </div>
-                  {financeItems.length > 1 && (
+                  {financeDays.length > 1 && (
                     <button
                       type="button"
                       onClick={() =>
-                        setFinanceItems((current) =>
-                          current.filter((entry) => entry.id !== item.id),
+                        setFinanceDays((current) =>
+                          current.filter((entry) => entry.id !== day.id),
                         )
                       }
-                      className="text-text-secondary"
-                      aria-label="Hapus transaksi"
+                      className="flex h-8 w-8 items-center justify-center text-text-secondary"
+                      aria-label={`Hapus ${formatFinanceDay(day.date)}`}
                     >
-                      <LordIcon src={ICONS.close} size={18} />
+                      <LordIcon src={ICONS.delete} size={17} />
                     </button>
                   )}
                 </div>
-              </div>
+
+                <div className="divide-y divide-border px-3">
+                  {day.items.map((item) => (
+                    <div key={item.id} className="py-3">
+                      <div className="mb-2 flex gap-2">
+                        {(['expense', 'income'] as const).map((kind) => (
+                          <button
+                            key={kind}
+                            type="button"
+                            onClick={() => updateFinanceItem(day.id, item.id, { kind })}
+                            className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+                              item.kind === kind
+                                ? kind === 'income'
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : 'bg-red-100 text-red-600'
+                                : 'bg-gray-100 text-text-secondary'
+                            }`}
+                          >
+                            {kind === 'income' ? 'Pemasukan' : 'Pengeluaran'}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={item.description}
+                          onChange={(event) =>
+                            updateFinanceItem(day.id, item.id, {
+                              description: event.target.value,
+                            })
+                          }
+                          placeholder="Digunakan untuk apa?"
+                          className="min-w-0 flex-1 border-b border-border py-2 text-sm outline-none focus:border-primary"
+                        />
+                        <div className="flex w-28 flex-shrink-0 items-center border-b border-border focus-within:border-primary sm:w-32">
+                          <span className="text-xs text-text-secondary">Rp</span>
+                          <input
+                            type="number"
+                            min="0"
+                            inputMode="numeric"
+                            value={item.amount || ''}
+                            onChange={(event) =>
+                              updateFinanceItem(day.id, item.id, {
+                                amount: Number(event.target.value),
+                              })
+                            }
+                            placeholder="0"
+                            className="w-full py-2 text-right text-sm font-semibold outline-none"
+                          />
+                        </div>
+                        {day.items.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFinanceDays((current) =>
+                                current.map((entry) =>
+                                  entry.id === day.id
+                                    ? {
+                                        ...entry,
+                                        items: entry.items.filter(
+                                          (financeItem) => financeItem.id !== item.id,
+                                        ),
+                                      }
+                                    : entry,
+                                ),
+                              )
+                            }
+                            className="flex h-8 w-8 flex-shrink-0 items-center justify-center text-text-secondary"
+                            aria-label="Hapus transaksi"
+                          >
+                            <LordIcon src={ICONS.close} size={17} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFinanceDays((current) =>
+                      current.map((entry) =>
+                        entry.id === day.id
+                          ? {
+                              ...entry,
+                              items: [...entry.items, makeFinance(entry.date)],
+                            }
+                          : entry,
+                      ),
+                    )
+                  }
+                  className="flex w-full items-center justify-center gap-2 border-t border-border px-3 py-3 text-xs font-semibold text-primary"
+                >
+                  <LordIcon src={ICONS.add} colors={COLOR_PRIMARY} size={17} />
+                  Tambah transaksi
+                </button>
+              </section>
             ))}
           </div>
+
           <button
             type="button"
-            onClick={() => setFinanceItems((current) => [...current, makeFinance()])}
-            className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-primary"
+            onClick={addFinanceDay}
+            className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-chip border border-dashed border-primary/50 bg-primary-light text-sm font-semibold text-primary"
           >
-            <LordIcon src={ICONS.add} colors={COLOR_PRIMARY} size={18} />
-            Tambah transaksi
+            <LordIcon src={ICONS.calendar} colors={COLOR_PRIMARY} size={19} />
+            Tambah hari
           </button>
         </div>
       )}
 
-      <div className="space-y-3">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-light">
-            <LordIcon src={ICONS.bell} colors={COLOR_PRIMARY} size={17} />
-          </span>
-          <div>
-            <p className="text-sm font-bold text-text-primary">Pengingat</p>
-            <p className="text-[11px] text-text-secondary">
-              Atur tanggal dan jam untuk pengingat serta notifikasi perangkat.
-            </p>
+      {mode !== 'finance' && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-light">
+              <LordIcon src={ICONS.bell} colors={COLOR_PRIMARY} size={17} />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-text-primary">Pengingat</p>
+              <p className="text-[11px] text-text-secondary">
+                Atur tanggal dan jam untuk pengingat serta notifikasi perangkat.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-xs font-medium text-text-secondary">
+              Tanggal
+              <input
+                type="date"
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+                className="mt-1.5 w-full rounded-input border border-border bg-white px-3 py-2.5 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary"
+              />
+            </label>
+            <label className="text-xs font-medium text-text-secondary">
+              Jam
+              <input
+                type="time"
+                value={time}
+                onChange={(event) => setTime(event.target.value)}
+                className="mt-1.5 w-full rounded-input border border-border bg-white px-3 py-2.5 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary"
+              />
+            </label>
           </div>
         </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <label className="text-xs font-medium text-text-secondary">
-            Tanggal
-            <input
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-              className="mt-1.5 w-full rounded-input border border-border bg-white px-3 py-2.5 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary"
-            />
-          </label>
-          <label className="text-xs font-medium text-text-secondary">
-            Jam
-            <input
-              type="time"
-              value={time}
-              onChange={(event) => setTime(event.target.value)}
-              className="mt-1.5 w-full rounded-input border border-border bg-white px-3 py-2.5 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary"
-            />
-          </label>
-        </div>
-      </div>
+      )}
 
       <div>
         <p className="mb-2 text-xs font-medium text-text-secondary">Kategori</p>

@@ -43,6 +43,17 @@ function formatActivity(value: string) {
   })
 }
 
+function formatFinanceDate(value?: string) {
+  if (!value) return 'Transaksi sebelumnya'
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
 export function NoteDetail({
   note,
   onClose,
@@ -66,6 +77,17 @@ export function NoteDetail({
   const expense = financeItems
     .filter((item) => item.kind === 'expense')
     .reduce((sum, item) => sum + item.amount, 0)
+  const financeGroups = Array.from(
+    financeItems
+      .reduce((groups, item) => {
+        const groupDate = item.date || note.scheduledAt?.split('T')[0] || ''
+        const group = groups.get(groupDate) || []
+        group.push(item)
+        groups.set(groupDate, group)
+        return groups
+      }, new Map<string, FinanceEntry[]>())
+      .entries(),
+  ).sort(([first], [second]) => first.localeCompare(second))
   const typeLabel =
     note.type === 'todo' ? 'To-do list' : note.type === 'finance' ? 'Keuangan' : 'Catatan'
   const typeIcon =
@@ -137,7 +159,7 @@ export function NoteDetail({
           {note.title}
         </h1>
 
-        {note.scheduledAt && (
+        {note.type !== 'finance' && note.scheduledAt && (
           <div className="mb-6 flex items-center gap-3 rounded-card bg-primary-light px-4 py-3">
             <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white">
               <LordIcon src={ICONS.bell} colors={COLOR_PRIMARY} size={18} />
@@ -222,29 +244,69 @@ export function NoteDetail({
               </div>
             </div>
 
-            <div className="divide-y divide-border">
-              {financeItems.length > 0 ? (
-                financeItems.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-3 py-3">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <LordIcon
-                        src={item.kind === 'income' ? ICONS.income : ICONS.expense}
-                        colors={item.kind === 'income' ? COLOR_GREEN : COLOR_DANGER}
-                        size={18}
-                      />
-                      <span className="truncate text-sm text-text-primary">
-                        {item.description}
-                      </span>
-                    </div>
-                    <span
-                      className={`flex-shrink-0 text-sm font-semibold ${
-                        item.kind === 'income' ? 'text-emerald-700' : 'text-red-600'
-                      }`}
-                    >
-                      {item.kind === 'income' ? '+' : '-'} {rupiah(item.amount)}
-                    </span>
-                  </div>
-                ))
+            <div className="space-y-5">
+              {financeGroups.length > 0 ? (
+                financeGroups.map(([groupDate, groupItems]) => {
+                  const visibleItems = groupItems.filter(
+                    (item) => item.description && item.amount > 0,
+                  )
+                  const dayExpense = visibleItems
+                    .filter((item) => item.kind === 'expense')
+                    .reduce((sum, item) => sum + item.amount, 0)
+
+                  return (
+                    <section key={groupDate || 'legacy'}>
+                      <div className="mb-1 flex items-center justify-between gap-3 border-b border-border pb-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <LordIcon src={ICONS.calendar} colors={COLOR_PRIMARY} size={17} />
+                          <h2 className="truncate text-xs font-bold text-text-primary">
+                            {formatFinanceDate(groupDate)}
+                          </h2>
+                        </div>
+                        {dayExpense > 0 && (
+                          <span className="flex-shrink-0 text-[11px] font-semibold text-red-600">
+                            - {rupiah(dayExpense)}
+                          </span>
+                        )}
+                      </div>
+
+                      {visibleItems.length > 0 ? (
+                        <div className="divide-y divide-border">
+                          {visibleItems.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-start justify-between gap-3 py-3"
+                            >
+                              <div className="flex min-w-0 items-start gap-2.5">
+                                <LordIcon
+                                  src={item.kind === 'income' ? ICONS.income : ICONS.expense}
+                                  colors={item.kind === 'income' ? COLOR_GREEN : COLOR_DANGER}
+                                  size={18}
+                                />
+                                <span className="break-words text-sm text-text-primary">
+                                  {item.description}
+                                </span>
+                              </div>
+                              <span
+                                className={`flex-shrink-0 text-sm font-semibold ${
+                                  item.kind === 'income'
+                                    ? 'text-emerald-700'
+                                    : 'text-red-600'
+                                }`}
+                              >
+                                {item.kind === 'income' ? '+' : '-'} {rupiah(item.amount)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="py-3 text-sm text-text-secondary">
+                          Belum ada transaksi pada tanggal ini.
+                        </p>
+                      )}
+                    </section>
+                  )
+                })
               ) : (
                 <p className="text-sm text-text-secondary">Belum ada transaksi.</p>
               )}

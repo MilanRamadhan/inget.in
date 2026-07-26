@@ -93,8 +93,9 @@ export default function DashboardPage() {
     if (!editingNote) return
     setNoteFormLoading(true)
     try {
-      await updateNote(editingNote.id, data)
+      const updatedNote = await updateNote(editingNote.id, data)
       setEditingNote(null)
+      setViewingNoteId(updatedNote.id)
     } finally {
       setNoteFormLoading(false)
     }

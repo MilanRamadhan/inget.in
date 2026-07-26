@@ -50,6 +50,12 @@ export function NoteCard({
   const expense = financeItems
     .filter((item) => item.kind === 'expense')
     .reduce((sum, item) => sum + item.amount, 0)
+  const financeDayCount = new Set(
+    financeItems.map((item) => item.date).filter((itemDate): itemDate is string => Boolean(itemDate)),
+  ).size
+  const financeTransactionCount = financeItems.filter(
+    (item) => item.description && item.amount > 0,
+  ).length
 
   useEffect(() => {
     const close = (event: MouseEvent) => {
@@ -184,6 +190,10 @@ export function NoteCard({
             <span className="text-emerald-700">+ {rupiah(income)}</span>
             <span className="text-red-600">- {rupiah(expense)}</span>
           </div>
+          <p className="text-[10px] text-text-secondary">
+            {financeDayCount || 1} tanggal
+            {financeTransactionCount > 0 ? ` · ${financeTransactionCount} transaksi` : ''}
+          </p>
         </div>
       )}
 

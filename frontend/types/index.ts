@@ -26,6 +26,7 @@ export interface FinanceEntry {
   description: string
   amount: number
   kind: 'income' | 'expense'
+  date?: string
 }
 
 export type NoteType = 'text' | 'todo' | 'finance'
