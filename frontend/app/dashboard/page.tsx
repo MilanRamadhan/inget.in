@@ -466,19 +466,21 @@ export default function DashboardPage() {
                       </span>
                     </div>
 
-                    <div className="-mx-4 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-4 pb-3 scrollbar-hide sm:mx-0 sm:px-0">
-                      {row.notes.map((note) => (
-                        <div
-                          key={note.id}
-                          className={`${row.cardClassName} flex-none snap-start self-stretch`}
-                        >
-                          <NoteCard
-                            note={note}
-                            onOpen={(selectedNote) => setViewingNoteId(selectedNote.id)}
-                            onDelete={deleteNote}
-                          />
-                        </div>
-                      ))}
+                    <div className="-mx-4 snap-x snap-mandatory overflow-x-auto pb-3 scrollbar-hide sm:mx-0">
+                      <div className="flex w-max min-w-full items-stretch gap-3 px-4 sm:px-0">
+                        {row.notes.map((note) => (
+                          <div
+                            key={note.id}
+                            className={`${row.cardClassName} flex-none snap-start self-stretch`}
+                          >
+                            <NoteCard
+                              note={note}
+                              onOpen={(selectedNote) => setViewingNoteId(selectedNote.id)}
+                              onDelete={deleteNote}
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </section>
                 ))}
