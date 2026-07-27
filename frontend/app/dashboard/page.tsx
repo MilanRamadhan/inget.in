@@ -467,7 +467,11 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="-mx-4 snap-x snap-mandatory overflow-x-auto pb-3 scrollbar-hide sm:mx-0">
-                      <div className="flex w-max min-w-full items-stretch gap-3 px-4 sm:px-0">
+                      <div className="flex w-max min-w-full items-stretch gap-3">
+                        <span
+                          aria-hidden="true"
+                          className="w-4 flex-none sm:hidden"
+                        />
                         {row.notes.map((note) => (
                           <div
                             key={note.id}
@@ -480,6 +484,10 @@ export default function DashboardPage() {
                             />
                           </div>
                         ))}
+                        <span
+                          aria-hidden="true"
+                          className="w-4 flex-none sm:hidden"
+                        />
                       </div>
                     </div>
                   </section>
